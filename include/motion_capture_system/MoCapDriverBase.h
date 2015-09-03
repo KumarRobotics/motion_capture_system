@@ -70,9 +70,10 @@ class Subject {
      * @param m_cov Measurement noise
      * @return True if success
      */
-    bool setNoiseParameter(
+    bool setParameters(
         const Eigen::Matrix<double, 12, 12>& u_cov,
-        const Eigen::Matrix<double, 6, 6>& m_cov);
+        const Eigen::Matrix<double, 6, 6>& m_cov,
+        const int& freq);
 
     /*
      * @brief processNewMeasurement Process new measurements

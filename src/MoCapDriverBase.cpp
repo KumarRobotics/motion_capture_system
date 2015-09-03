@@ -79,11 +79,12 @@ const Vector3d& Subject::getLinearVel() {
 }
 
 // Set the noise parameter for the kalman filter
-bool Subject::setNoiseParameter(
+bool Subject::setParameters(
     const Matrix<double, 12, 12>& u_cov,
-    const Matrix<double, 6, 6>& m_cov) {
+    const Matrix<double, 6, 6>& m_cov,
+    const int& freq) {
   boost::unique_lock<boost::shared_mutex> write_lock(mtx);
-  return kFilter.init(u_cov, m_cov);
+  return kFilter.init(u_cov, m_cov, freq);
 }
 
 // Process the new measurement

@@ -33,6 +33,7 @@ KalmanFilter::KalmanFilter():
   measurement_cov  (Matrix6d::Identity()),
   filter_status    (INIT_POSE),
   last_time_stamp  (0.0),
+  msg_interval     (0.01),
   proc_jacob       (Matrix12d::Zero()),
   meas_jacob       (Matrix6_12d::Zero()),
   proc_noise_jacob (Matrix12d::Zero()),
@@ -51,8 +52,8 @@ KalmanFilter::KalmanFilter():
 }
 
 bool KalmanFilter::init(const Matrix12d& u_cov,
-    const Matrix6d& m_cov) {
-  bool valid_cov = true;
+    const Matrix6d& m_cov, const int& freq) {
+  bool is_valid = true;
   JacobiSVD<Matrix12d> u_svd(u_cov);
   JacobiSVD<Matrix6d> m_svd(m_cov);
 
@@ -60,7 +61,7 @@ bool KalmanFilter::init(const Matrix12d& u_cov,
   Vector6d m_sigmas = m_svd.singularValues();
 
   if (u_sigmas(11) < 1e-7) {
-    valid_cov = false;
+    is_valid = false;
     ROS_ERROR("Input Cov is close to singular (least singlar value:%f < 1e-7)",
         u_sigmas(11));
   } else {
@@ -68,14 +69,21 @@ bool KalmanFilter::init(const Matrix12d& u_cov,
   }
 
   if (m_sigmas(5) < 1e-7) {
-    valid_cov = false;
+    is_valid = false;
     ROS_ERROR("Measurement Cov is close to singular (least singlar value:%f < 1e-7)",
         m_sigmas(5));
   } else {
     measurement_cov = m_cov;
   }
 
-  return valid_cov;
+  if (freq < 0) {
+    is_valid = false;
+    ROS_ERROR("Invalid frequency for filter (%d < 0)", freq);
+  } else {
+    msg_interval = 1.0 / static_cast<double>(freq);
+  }
+
+  return is_valid;
 }
 
 bool KalmanFilter::prepareInitialCondition(
@@ -101,7 +109,7 @@ bool KalmanFilter::prepareInitialCondition(
       AngleAxisd daa(dq);
       Vector3d dr = m_position-position;
       double dt = curr_time_stamp-last_time_stamp;
-      dt = dt > 0 ? dt : 0.01;
+      dt = dt > 0 ? dt : msg_interval;
       // Set current pose and velocity
       last_time_stamp += dt;
       attitude = m_attitude;
@@ -136,7 +144,7 @@ void KalmanFilter::reset() {
 void KalmanFilter::prediction(const double& curr_time_stamp) {
   // Propogate the actual state
   double dt = curr_time_stamp - last_time_stamp;
-  dt = dt > 0 ? dt : 0.01;
+  dt = dt > 0 ? dt : msg_interval;
   Vector3d dw = angular_vel * dt;
   Vector3d dr = linear_vel * dt;
 
@@ -233,7 +241,8 @@ void KalmanFilter::update(const Eigen::Quaterniond& m_attitude,
   //cout << "dli: " << dx.segment<3>(9).transpose() << endl;
 
   //cout << "Update: " << endl;
-  //cout << "att: " << Vector4d(attitude.w(), attitude.x(), attitude.y(), attitude.z()).transpose() << endl;
+  //cout << "att: " <<
+  //  Vector4d(attitude.w(), attitude.x(), attitude.y(), attitude.z()).transpose() << endl;
   //cout << "pos: " << position.transpose() << endl;
   //cout << "ang: " << angular_vel.transpose() << endl;
   //cout << "lin: " << linear_vel.transpose() << endl;

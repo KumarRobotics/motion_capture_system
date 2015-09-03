@@ -150,8 +150,8 @@ void ViconDriver::handleSubject(const int& sub_idx) {
   if (subjects.find(subject_name) == subjects.end()) {
     subjects[subject_name] = Subject::SubjectPtr(
         new Subject(&nh, subject_name, fixed_frame_id));
-    subjects[subject_name]->setNoiseParameter(
-        process_noise, measurement_noise);
+    subjects[subject_name]->setParameters(
+        process_noise, measurement_noise, frame_rate);
   } else {
     if (!subjects[subject_name]->isActive()) {
       subjects[subject_name]->enable();

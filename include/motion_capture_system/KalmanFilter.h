@@ -70,7 +70,8 @@ class KalmanFilter {
      * @param m_cov Measurement noise
      * @return True if success
      */
-    bool init(const Matrix12d& u_cov, const Matrix6d& m_cov);
+    bool init(const Matrix12d& u_cov,
+        const Matrix6d& m_cov, const int& freq);
 
     /*
      * @brief prepareInitialCondition This functions is dedicated
@@ -137,6 +138,8 @@ class KalmanFilter {
 
     // Time that the state correspond to
     double last_time_stamp;
+    // Expected time interval between updates
+    double msg_interval;
 
     // Jacobians
     Matrix12d   proc_jacob;       // Process jacobian
