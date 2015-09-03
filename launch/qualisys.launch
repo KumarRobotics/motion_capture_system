@@ -1,0 +1,14 @@
+<launch>
+  <node pkg="qualisys"
+    type="qualisys_node"
+    name="qualisys"
+    output="screen">
+    <param name="server_address" value="192.168.254.1"/>
+    <param name="base_port" value="22222"/>
+    <param name="model" value=""/>
+    <param name="frame_rate" value="100"/>
+    <param name="max_accel" value="10"/>
+    <param name="publish_tf" value="false"/>
+    <param name="fixed_frame_id" value="mocap"/>
+  </node>
+</launch>
