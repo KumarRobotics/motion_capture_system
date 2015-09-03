@@ -171,15 +171,14 @@ void KalmanFilter::prediction(const double& curr_time_stamp) {
   proc_jacob(3,  9) =  dt;
   proc_jacob(4, 10) =  dt;
   proc_jacob(5, 11) =  dt;
-  //proc_jacob.topRightCorner<6, 6>() = Matrix6d::Identity()*dt;
-  //proc_noise_jacob = Matrix12d::Identity()*dt;
 
   //state_cov = proc_jacob*state_cov*proc_jacob.transpose() +
   //  proc_noise_jacob*input_cov*proc_noise_jacob.transpose();
   state_cov = proc_jacob*state_cov*proc_jacob.transpose() + input_cov;
 
   //cout << "Process: " << endl;
-  //cout << "att: " << Vector4d(attitude.w(), attitude.x(), attitude.y(), attitude.z()).transpose() << endl;
+  //cout << "att: " <<
+  //  Vector4d(attitude.w(), attitude.x(), attitude.y(), attitude.z()).transpose() << endl;
   //cout << "pos: " << position.transpose() << endl;
   //cout << "ang: " << angular_vel.transpose() << endl;
   //cout << "lin: " << linear_vel.transpose() << endl;
@@ -225,9 +224,6 @@ void KalmanFilter::update(const Eigen::Quaterniond& m_attitude,
   linear_vel += dx.segment<3>(9);
 
   // Update the uncertainty of the state/error
-  //Matrix12d cov_map = Matrix12d::Identity() - K*meas_jacob;
-  //state_cov = cov_map*state_cov*cov_map.transpose() +
-  //  K*measurement_cov*K.transpose();
   state_cov = (Matrix12d::Identity()-K*meas_jacob) * state_cov;
 
   //cout << "Error: " << endl;
