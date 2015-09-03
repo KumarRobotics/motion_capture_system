@@ -42,7 +42,7 @@ bool ViconDriver::init() {
   process_noise.topLeftCorner<6, 6>() =
     0.5*Matrix<double, 6, 6>::Identity()*dt*dt*max_accel;
   process_noise.bottomRightCorner<6, 6>() =
-    Matrix<double, 6, 6>::Identity()*dt*5*max_accel;
+    Matrix<double, 6, 6>::Identity()*dt*10*max_accel;
   measurement_noise =
     Matrix<double, 6, 6>::Identity()*1e-5;
 
@@ -135,8 +135,9 @@ void ViconDriver::handleSubject(const int& sub_idx) {
   if(trans.Result != ViconSDK::Result::Success ||
      quat.Result != ViconSDK::Result::Success ||
      trans.Occluded || quat.Occluded) {
-    subjects[subject_name]->disable();
     ROS_WARN("Rigid body %s cannot be detected", subject_name.c_str());
+    if (subjects.find(subject_name) != subjects.end())
+      subjects[subject_name]->disable();
     return;
   }
 
@@ -154,6 +155,7 @@ void ViconDriver::handleSubject(const int& sub_idx) {
         process_noise, measurement_noise, frame_rate);
   } else {
     if (!subjects[subject_name]->isActive()) {
+      ROS_WARN("Rigid body %s is re-detected", subject_name.c_str());
       subjects[subject_name]->enable();
     }
   }

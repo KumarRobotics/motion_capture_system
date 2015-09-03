@@ -142,9 +142,10 @@ void QualisysDriver::handleSubject(const int& sub_idx) {
   // If the subject is lost
   if(isnan(x) || isnan(y) || isnan(z) ||
      isnan(roll) || isnan(pitch) || isnan(yaw)) {
-    subjects[subject_name]->disable();
     ROS_WARN_STREAM_THROTTLE(3, "Rigid-body " <<
         subject_name << " not detected");
+    if (subjects.find(subject_name) != subjects.end())
+      subjects[subject_name]->disable();
     return;
   }
 
@@ -168,6 +169,7 @@ void QualisysDriver::handleSubject(const int& sub_idx) {
         process_noise, measurement_noise, frame_rate);
   } else {
     if (!subjects[subject_name]->isActive()) {
+      ROS_WARN("Rigid body %s is re-detected", subject_name.c_str());
       subjects[subject_name]->enable();
     }
   }
