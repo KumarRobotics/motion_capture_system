@@ -20,6 +20,7 @@
 
 #include <map>
 #include <string>
+#include <vector>
 #include <boost/thread.hpp>
 #include <boost/shared_ptr.hpp>
 #include <Eigen/Dense>
@@ -35,6 +36,13 @@ namespace mocap{
  */
 class Subject {
   public:
+
+    enum Status {
+      LOST,
+      INITIALIZING,
+      TRACKED
+    };
+
     /*
      * @brief Constructor and Destructor
      */
@@ -51,7 +59,7 @@ class Subject {
     /*
      * @brief isActive Tells if the object is still active or not
      */
-    const bool& isActive();
+    const Status& getStatus();
     void enable();
     void disable();
     /*
@@ -101,8 +109,8 @@ class Subject {
     // Error state Kalman filter
     KalmanFilter kFilter;
 
-    // Tells if the subject is still visible in the arena
-    bool is_active;
+    // Tells the status of the object
+    Status status;
 
     // Prevent cocurrent reading and writing of the class
     boost::shared_mutex mtx;
@@ -129,6 +137,7 @@ class MoCapDriverBase{
     MoCapDriverBase(const ros::NodeHandle& n):
       nh             (n),
       frame_rate     (100),
+      model_list     (std::vector<std::string>(0)),
       publish_tf     (false),
       fixed_frame_id ("mocap"){
       return;
@@ -186,6 +195,10 @@ class MoCapDriverBase{
 
     // Frame rate of the mocap system
     int frame_rate;
+
+    // Rigid body to be tracked
+    // Empty string if all the objects in the arena are to be tracked
+    std::vector<std::string> model_list;
 
     // Observed rigid bodies (contains those lose tracking)
     std::map<std::string, Subject::SubjectPtr> subjects;

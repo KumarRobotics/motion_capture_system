@@ -31,7 +31,7 @@ namespace mocap {
 bool ViconDriver::init() {
 
   nh.param("server_address", server_address, string("alkaline2"));
-  nh.param("model", model, string(""));
+  nh.param("model_list", model_list, vector<string>(0));
   nh.param("frame_rate", frame_rate, 100);
   nh.param("max_accel", max_accel, 20.0);
   nh.param("publish_tf", publish_tf, false);
@@ -45,6 +45,7 @@ bool ViconDriver::init() {
     Matrix<double, 6, 6>::Identity()*dt*10*max_accel;
   measurement_noise =
     Matrix<double, 6, 6>::Identity()*1e-5;
+  model_set.insert(model_list.begin(), model_list.end());
 
   timespec ts_sleep;
   ts_sleep.tv_sec = 0;
@@ -107,22 +108,50 @@ void ViconDriver::disconnect() {
 
 void ViconDriver::handleFrame() {
   int body_count = client->GetSubjectCount().SubjectCount;
-  if (model.empty()) {
-    for (int i = 0; i< body_count; ++i)
-        handleSubject(i);
-  } else {
-    // TODO: Convert the following loop to multi-threading
-    for (int i = 0; i< body_count; ++i) {
-      string subject_name = client->GetSubjectName(i).SubjectName;
-      if (subject_name == model)
-        handleSubject(i);
+  // Assign each subject with a thread
+  map<string, boost::shared_ptr<boost::thread> > subject_threads;
+
+  for (int i = 0; i< body_count; ++i) {
+    string subject_name =
+      client->GetSubjectName(i).SubjectName;
+
+    // Create a new subject if it does not exist
+    if (model_set.empty() || model_set.count(subject_name)) {
+      if (subjects.find(subject_name) == subjects.end()) {
+        subjects[subject_name] = Subject::SubjectPtr(
+            new Subject(&nh, subject_name, fixed_frame_id));
+        subjects[subject_name]->setParameters(
+            process_noise, measurement_noise, frame_rate);
+      }
+      // Handle the subject in a different thread
+      subject_threads[subject_name] =
+        boost::shared_ptr<boost::thread>(
+          new boost::thread(&ViconDriver::handleSubject, this, i));
     }
   }
+
+  // Wait for all the threads to stop
+  for (auto it = subject_threads.begin();
+      it != subject_threads.end(); ++it) {
+    it->second->join();
+  }
+
+  // Send out warnings
+  for (auto it = subjects.begin();
+      it != subjects.end(); ++it) {
+    Subject::Status status = it->second->getStatus();
+    if (status == Subject::LOST)
+      ROS_WARN("Lose track of subject %s", (it->first).c_str());
+    else if (status == Subject::INITIALIZING)
+      ROS_WARN("Initialize subject %s", (it->first).c_str());
+  }
+
   return;
 }
 
 void ViconDriver::handleSubject(const int& sub_idx) {
 
+  boost::unique_lock<boost::shared_mutex> write_lock(mtx);
   // We assume each subject has only one segment
   string subject_name = client->GetSubjectName(sub_idx).SubjectName;
   string segment_name = client->GetSegmentName(subject_name, 0).SegmentName;
@@ -131,13 +160,13 @@ void ViconDriver::handleSubject(const int& sub_idx) {
       client->GetSegmentGlobalTranslation(subject_name, segment_name);
   ViconSDK::Output_GetSegmentGlobalRotationQuaternion quat =
       client->GetSegmentGlobalRotationQuaternion(subject_name, segment_name);
+  write_lock.unlock();
 
+  //boost::shared_lock<boost::shared_mutex> read_lock(mtx);
   if(trans.Result != ViconSDK::Result::Success ||
      quat.Result != ViconSDK::Result::Success ||
      trans.Occluded || quat.Occluded) {
-    ROS_WARN("Rigid body %s cannot be detected", subject_name.c_str());
-    if (subjects.find(subject_name) != subjects.end())
-      subjects[subject_name]->disable();
+    subjects[subject_name]->disable();
     return;
   }
 
@@ -148,38 +177,19 @@ void ViconDriver::handleSubject(const int& sub_idx) {
       trans.Translation[1]/1000, trans.Translation[2]/1000);
 
   // Create a object if it has not been observed before
-  if (subjects.find(subject_name) == subjects.end()) {
-    subjects[subject_name] = Subject::SubjectPtr(
-        new Subject(&nh, subject_name, fixed_frame_id));
-    subjects[subject_name]->setParameters(
-        process_noise, measurement_noise, frame_rate);
-  } else {
-    if (!subjects[subject_name]->isActive()) {
-      ROS_WARN("Rigid body %s is re-detected", subject_name.c_str());
-      subjects[subject_name]->enable();
-    }
+  if (subjects[subject_name]->getStatus() == Subject::LOST) {
+    subjects[subject_name]->enable();
   }
 
   // Feed the new measurement to the subject
   double time = ros::Time::now().toSec();
-  //printf("time: %f\n", time);
   subjects[subject_name]->processNewMeasurement(time, m_att, m_pos);
+  //read_lock.unlock();
 
-  // For debug only
-  //printf("time: %f\n", time);
-  //cout << Vector4d(m_att.w(), m_att.x(), m_att.y(), m_att.z()).transpose() << endl;
-  //cout << m_pos.transpose() << endl;
-  //Quaterniond f_att = subjects[subject_name]->getAttitude();
-  //Vector3d f_pos = subjects[subject_name]->getPosition();
-  //Vector3d f_ang_vel = subjects[subject_name]->getAngularVel();
-  //Vector3d f_lin_vel = subjects[subject_name]->getLinearVel();
-  //cout << Vector4d(f_att.w(), f_att.x(), f_att.y(), f_att.z()).transpose() << endl;
-  //cout << f_pos.transpose() << endl;
-  //cout << f_ang_vel.transpose() << endl;
-  //cout << f_lin_vel.transpose() << endl;
 
   // Publish tf if requred
-  if (publish_tf) {
+  if (publish_tf &&
+      subjects[subject_name]->getStatus() == Subject::TRACKED) {
     tf::Quaternion att_tf;
     tf::Vector3 pos_tf;
 
@@ -189,8 +199,11 @@ void ViconDriver::handleSubject(const int& sub_idx) {
     tf::StampedTransform stamped_transform =
       tf::StampedTransform(tf::Transform(att_tf, pos_tf),
         ros::Time::now(), fixed_frame_id, subject_name);
+    write_lock.lock();
     tf_publisher.sendTransform(stamped_transform);
+    write_lock.unlock();
   }
+
   return;
 }
 

@@ -26,7 +26,7 @@ namespace mocap {
 Subject::Subject(ros::NodeHandle* nptr, const string& sub_name,
     const std::string& p_frame):
   name         (sub_name),
-  is_active    (true),
+  status       (LOST),
   nh_ptr       (nptr),
   parent_frame (p_frame){
 
@@ -46,18 +46,18 @@ void Subject::setName(const string& sub_name) {
 }
 
 // Enable or diable the subject
-const bool& Subject::isActive() {
+const Subject::Status& Subject::getStatus() {
   boost::shared_lock<boost::shared_mutex> read_lock(mtx);
-  return is_active;
+  return status;
 }
 void Subject::enable() {
   boost::unique_lock<boost::shared_mutex> write_lock(mtx);
-  is_active = true;
+  status = INITIALIZING;
 }
 void Subject::disable() {
   boost::unique_lock<boost::shared_mutex> write_lock(mtx);
   kFilter.reset();
-  is_active = false;
+  status = LOST;
 }
 
 // Get the state of the subject
@@ -96,9 +96,12 @@ void Subject::processNewMeasurement(
   boost::unique_lock<boost::shared_mutex> write_lock(mtx);
 
   if (!kFilter.isReady()) {
+    status = INITIALIZING;
     kFilter.prepareInitialCondition(time, m_attitude, m_position);
     return;
   }
+
+  status = TRACKED;
   // Perfrom the kalman filter
   kFilter.prediction(time);
   kFilter.update(m_attitude, m_position);

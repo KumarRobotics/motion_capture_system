@@ -21,6 +21,8 @@
 
 #include <cmath>
 #include <string>
+#include <set>
+#include <boost/thread.hpp>
 #include <ros/ros.h>
 #include <motion_capture_system/MoCapDriverBase.h>
 #include "Client.h"
@@ -86,20 +88,21 @@ class ViconDriver: public MoCapDriverBase {
     // Portal to communicate with the server
     ViconDataStreamSDK::CPP::Client* client;
 
-    // Rigid body to be tracked
-    // Empty string if all the objects in the arena are to be tracked
-    std::string model;
-
     // Max acceleration
     double max_accel;
 
     // Average time interval between two frames
     double frame_interval;
 
+    // A set to hold the model names
+    std::set<std::string> model_set;
+
     // Convariance matrices for initializing kalman filters
     Eigen::Matrix<double, 12, 12> process_noise;
     Eigen::Matrix<double,  6,  6> measurement_noise;
 
+    // For multi-threading
+    boost::shared_mutex mtx;
 
 };
 }
