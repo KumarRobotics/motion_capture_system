@@ -31,7 +31,7 @@ Subject::Subject(ros::NodeHandle* nptr, const string& sub_name,
   parent_frame (p_frame){
 
   //pub_raw = nh_ptr->advertise<nav_msgs::Odometry>("odom_raw", 10);
-  pub_filter = nh_ptr->advertise<nav_msgs::Odometry>(name+"/odom_filter", 10);
+  pub_filter = nh_ptr->advertise<nav_msgs::Odometry>(name+"/odom", 10);
   return;
 }
 
