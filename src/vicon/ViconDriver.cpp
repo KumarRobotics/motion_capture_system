@@ -125,18 +125,18 @@ void ViconDriver::handleFrame() {
             process_noise, measurement_noise, frame_rate);
       }
       // Handle the subject in a different thread
-      //subject_threads[subject_name] =
-      //  boost::shared_ptr<boost::thread>(
-      //    new boost::thread(&ViconDriver::handleSubject, this, i));
-      handleSubject(i);
+      subject_threads[subject_name] =
+        boost::shared_ptr<boost::thread>(
+          new boost::thread(&ViconDriver::handleSubject, this, i));
+      //handleSubject(i);
     }
   }
 
   // Wait for all the threads to stop
-  //for (auto it = subject_threads.begin();
-  //    it != subject_threads.end(); ++it) {
-  //  it->second->join();
-  //}
+  for (auto it = subject_threads.begin();
+      it != subject_threads.end(); ++it) {
+    it->second->join();
+  }
 
   // Send out warnings
   for (auto it = subjects.begin();
@@ -178,7 +178,7 @@ void ViconDriver::handleSubject(const int& sub_idx) {
   Eigen::Vector3d m_pos(trans.Translation[0]/1000,
       trans.Translation[1]/1000, trans.Translation[2]/1000);
 
-  // Create a object if it has not been observed before
+  // Re-enable the object if it is lost previously
   if (subjects[subject_name]->getStatus() == Subject::LOST) {
     subjects[subject_name]->enable();
   }

@@ -21,11 +21,8 @@
 
 #include <cmath>
 #include <string>
-
+#include <set>
 #include <ros/ros.h>
-#include <tf/transform_broadcaster.h>
-#include <geometry_msgs/TransformStamped.h>
-
 #include <motion_capture_system/MoCapDriverBase.h>
 #include <motion_capture_system/qualisys/RTProtocol.h>
 
@@ -98,9 +95,8 @@ class QualisysDriver: public MoCapDriverBase{
     // (no need to initialize)
     CRTPacket* prt_packet;
 
-    // Rigid body to be tracked
-    // Empty string if all the objects in the arena are to be tracked
-    std::string model;
+    // A set to hold the model names
+    std::set<std::string> model_set;
 
     // Max acceleration
     double max_accel;
@@ -111,6 +107,9 @@ class QualisysDriver: public MoCapDriverBase{
     // Convariance matrices for initializing kalman filters
     Eigen::Matrix<double, 12, 12> process_noise;
     Eigen::Matrix<double,  6,  6> measurement_noise;
+
+    // For multi-threading
+    boost::shared_mutex mtx;
 
 };
 }

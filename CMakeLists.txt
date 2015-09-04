@@ -119,29 +119,29 @@ target_link_libraries(mocap_vicon_node
 )
 
 # QUALISYS
-#add_library(mocap_qualisys_driver
-#  src/MoCapDriverBase.cpp
-#  src/qualisys/QualisysDriver.cpp
-#  include/motion_capture_system/qualisys/RTProtocol.cpp
-#  include/motion_capture_system/qualisys/NBC_Markup.cpp
-#  include/motion_capture_system/qualisys/RTPacket.cpp
-#  include/motion_capture_system/qualisys/Network.cpp
-#)
-#target_link_libraries(mocap_qualisys_driver
-#  mocap_kalman_filter
-#  ${catkin_LIBRARIES}
-#)
-#add_dependencies(mocap_qualisys_driver
-#  ${${PROJECT_NAME}_EXPORTED_TARGETS}
-#
-#  ${catkin_EXPORTED_TARGETS}
-#)
-#
-#add_executable(mocap_qualisys_node
-#  src/qualisys/qualisys.cpp
-#)
-#target_link_libraries(mocap_qualisys_node
-#  mocap_qualisys_driver
-#  ${catkin_LIBRARIES}
-#)
+add_library(mocap_qualisys_driver
+  src/MoCapDriverBase.cpp
+  src/qualisys/QualisysDriver.cpp
+  include/motion_capture_system/qualisys/RTProtocol.cpp
+  include/motion_capture_system/qualisys/NBC_Markup.cpp
+  include/motion_capture_system/qualisys/RTPacket.cpp
+  include/motion_capture_system/qualisys/Network.cpp
+)
+target_link_libraries(mocap_qualisys_driver
+  mocap_kalman_filter
+  ${catkin_LIBRARIES}
+)
+add_dependencies(mocap_qualisys_driver
+  ${${PROJECT_NAME}_EXPORTED_TARGETS}
+
+  ${catkin_EXPORTED_TARGETS}
+)
+
+add_executable(mocap_qualisys_node
+  src/qualisys/qualisys.cpp
+)
+target_link_libraries(mocap_qualisys_node
+  mocap_qualisys_driver
+  ${catkin_LIBRARIES}
+)
 

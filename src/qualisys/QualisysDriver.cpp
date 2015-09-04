@@ -34,7 +34,7 @@ bool QualisysDriver::init() {
   // of the workspace options
   nh.param("server_address", server_address, string("192.168.254.1"));
   nh.param("server_base_port", base_port, 22222);
-  nh.param("model", model, string(""));
+  nh.param("model_list", model_list, vector<string>(0));
   nh.param("frame_rate", frame_rate, 100);
   nh.param("max_accel", max_accel, 20.0);
   nh.param("publish_tf", publish_tf, false);
@@ -48,6 +48,7 @@ bool QualisysDriver::init() {
     Matrix<double, 6, 6>::Identity()*dt*5*max_accel;
   measurement_noise =
     Matrix<double, 6, 6>::Identity()*1e-5;
+  model_set.insert(model_list.begin(), model_list.end());
 
   // Connecting to the server
   ROS_INFO_STREAM("Connecting to the Qualisys at: "
@@ -110,20 +111,46 @@ void QualisysDriver::run() {
 }
 
 void QualisysDriver::handleFrame() {
-
   // Number of rigid bodies
   int body_count = prt_packet->Get6DOFEulerBodyCount();
+  // Assign each subject with a thread
+  map<string, boost::shared_ptr<boost::thread> > subject_threads;
 
-  if (model.empty()) {
-    for (int i = 0; i< body_count; ++i)
-        handleSubject(i);
-  } else {
-    // TODO: Convert the following loop to multi-threading
-    for (int i = 0; i< body_count; ++i) {
-      string subject_name(port_protocol.Get6DOFBodyName(i));
-      if (subject_name == model)
-        handleSubject(i);
+  for (int i = 0; i< body_count; ++i) {
+    string subject_name(
+        port_protocol.Get6DOFBodyName(i));
+
+    // Process the subject if required
+    if (model_set.empty() || model_set.count(subject_name)) {
+      // Create a new subject if it does not exist
+      if (subjects.find(subject_name) == subjects.end()) {
+        subjects[subject_name] = Subject::SubjectPtr(
+            new Subject(&nh, subject_name, fixed_frame_id));
+        subjects[subject_name]->setParameters(
+            process_noise, measurement_noise, frame_rate);
+      }
+      // Handle the subject in a different thread
+      subject_threads[subject_name] =
+        boost::shared_ptr<boost::thread>(
+          new boost::thread(&QualisysDriver::handleSubject, this, i));
+      //handleSubject(i);
     }
+  }
+
+  // Wait for all the threads to stop
+  for (auto it = subject_threads.begin();
+      it != subject_threads.end(); ++it) {
+    it->second->join();
+  }
+
+  // Send out warnings
+  for (auto it = subjects.begin();
+      it != subjects.end(); ++it) {
+    Subject::Status status = it->second->getStatus();
+    if (status == Subject::LOST)
+      ROS_WARN("Lose track of subject %s", (it->first).c_str());
+    else if (status == Subject::INITIALIZING)
+      ROS_WARN("Initialize subject %s", (it->first).c_str());
   }
 
   return;
@@ -131,21 +158,19 @@ void QualisysDriver::handleFrame() {
 
 void QualisysDriver::handleSubject(const int& sub_idx) {
 
+  boost::unique_lock<boost::shared_mutex> write_lock(mtx);
   // Name of the subject
   string subject_name(port_protocol.Get6DOFBodyName(sub_idx));
-
   // Pose of the subject
   float x, y, z, roll, pitch, yaw;
   prt_packet->Get6DOFEulerBody(
       sub_idx, x, y, z, roll, pitch, yaw);
+  write_lock.unlock();
 
   // If the subject is lost
   if(isnan(x) || isnan(y) || isnan(z) ||
      isnan(roll) || isnan(pitch) || isnan(yaw)) {
-    ROS_WARN_STREAM_THROTTLE(3, "Rigid-body " <<
-        subject_name << " not detected");
-    if (subjects.find(subject_name) != subjects.end())
-      subjects[subject_name]->disable();
+    subjects[subject_name]->disable();
     return;
   }
 
@@ -161,17 +186,9 @@ void QualisysDriver::handleSubject(const int& sub_idx) {
       tf::createQuaternionFromRPY(roll*deg2rad, pitch*deg2rad, yaw*deg2rad), m_att);
   Eigen::Vector3d m_pos(x, y, z);
 
-  // Create a object if it has not been observed before
-  if (subjects.find(subject_name) == subjects.end()) {
-    subjects[subject_name] = Subject::SubjectPtr(
-        new Subject(&nh, subject_name, fixed_frame_id));
-    subjects[subject_name]->setParameters(
-        process_noise, measurement_noise, frame_rate);
-  } else {
-    if (!subjects[subject_name]->isActive()) {
-      ROS_WARN("Rigid body %s is re-detected", subject_name.c_str());
-      subjects[subject_name]->enable();
-    }
+  // Re-enable the object if it is lost previously
+  if (subjects[subject_name]->getStatus() == Subject::LOST) {
+    subjects[subject_name]->enable();
   }
 
   // Feed the new measurement to the subject
@@ -179,17 +196,22 @@ void QualisysDriver::handleSubject(const int& sub_idx) {
   subjects[subject_name]->processNewMeasurement(time, m_att, m_pos);
 
   // Publish tf if requred
-  if (publish_tf) {
+  if (publish_tf &&
+      subjects[subject_name]->getStatus() == Subject::TRACKED) {
+
+    Quaterniond att = subjects[subject_name]->getAttitude();
+    Vector3d pos = subjects[subject_name]->getPosition();
     tf::Quaternion att_tf;
     tf::Vector3 pos_tf;
-
-    tf::quaternionEigenToTF(m_att, att_tf);
-    tf::vectorEigenToTF(m_pos, pos_tf);
+    tf::quaternionEigenToTF(att, att_tf);
+    tf::vectorEigenToTF(pos, pos_tf);
 
     tf::StampedTransform stamped_transform =
       tf::StampedTransform(tf::Transform(att_tf, pos_tf),
         ros::Time::now(), fixed_frame_id, subject_name);
+    write_lock.lock();
     tf_publisher.sendTransform(stamped_transform);
+    write_lock.unlock();
   }
 
   return;
