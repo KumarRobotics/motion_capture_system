@@ -7,7 +7,7 @@
     <param name="base_port" value="22222"/>
     <param name="frame_rate" value="100"/>
     <param name="max_accel" value="10.0"/>
-    <param name="publish_tf" value="true"/>
+    <param name="publish_tf" value="false"/>
     <param name="fixed_frame_id" value="mocap"/>
     <rosparam param="model_list">[]</rosparam>
   </node>
