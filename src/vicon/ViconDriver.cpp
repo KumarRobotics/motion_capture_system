@@ -42,7 +42,7 @@ bool ViconDriver::init() {
   process_noise.topLeftCorner<6, 6>() =
     0.5*Matrix<double, 6, 6>::Identity()*dt*dt*max_accel;
   process_noise.bottomRightCorner<6, 6>() =
-    Matrix<double, 6, 6>::Identity()*dt*10*max_accel;
+    Matrix<double, 6, 6>::Identity()*dt*5*max_accel;
   measurement_noise =
     Matrix<double, 6, 6>::Identity()*1e-5;
   model_set.insert(model_list.begin(), model_list.end());
@@ -115,8 +115,9 @@ void ViconDriver::handleFrame() {
     string subject_name =
       client->GetSubjectName(i).SubjectName;
 
-    // Create a new subject if it does not exist
+    // Process the subject if required
     if (model_set.empty() || model_set.count(subject_name)) {
+      // Create a new subject if it does not exist
       if (subjects.find(subject_name) == subjects.end()) {
         subjects[subject_name] = Subject::SubjectPtr(
             new Subject(&nh, subject_name, fixed_frame_id));
@@ -124,17 +125,18 @@ void ViconDriver::handleFrame() {
             process_noise, measurement_noise, frame_rate);
       }
       // Handle the subject in a different thread
-      subject_threads[subject_name] =
-        boost::shared_ptr<boost::thread>(
-          new boost::thread(&ViconDriver::handleSubject, this, i));
+      //subject_threads[subject_name] =
+      //  boost::shared_ptr<boost::thread>(
+      //    new boost::thread(&ViconDriver::handleSubject, this, i));
+      handleSubject(i);
     }
   }
 
   // Wait for all the threads to stop
-  for (auto it = subject_threads.begin();
-      it != subject_threads.end(); ++it) {
-    it->second->join();
-  }
+  //for (auto it = subject_threads.begin();
+  //    it != subject_threads.end(); ++it) {
+  //  it->second->join();
+  //}
 
   // Send out warnings
   for (auto it = subjects.begin();
@@ -190,11 +192,13 @@ void ViconDriver::handleSubject(const int& sub_idx) {
   // Publish tf if requred
   if (publish_tf &&
       subjects[subject_name]->getStatus() == Subject::TRACKED) {
+
+    Quaterniond att = subjects[subject_name]->getAttitude();
+    Vector3d pos = subjects[subject_name]->getPosition();
     tf::Quaternion att_tf;
     tf::Vector3 pos_tf;
-
-    tf::quaternionEigenToTF(m_att, att_tf);
-    tf::vectorEigenToTF(m_pos, pos_tf);
+    tf::quaternionEigenToTF(att, att_tf);
+    tf::vectorEigenToTF(pos, pos_tf);
 
     tf::StampedTransform stamped_transform =
       tf::StampedTransform(tf::Transform(att_tf, pos_tf),
