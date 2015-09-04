@@ -16,7 +16,7 @@
 
 #include <ros/ros.h>
 #include <Eigen/SVD>
-#include <motion_capture_system/KalmanFilter.h>
+#include <mocap_base/KalmanFilter.h>
 
 using namespace std;
 using namespace Eigen;

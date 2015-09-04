@@ -17,19 +17,19 @@
  */
 
 #include <ros/ros.h>
-#include <motion_capture_system/vicon/ViconDriver.h>
+#include <mocap_qualisys/QualisysDriver.h>
 
 int main(int argc, char *argv[]) {
 
-  ros::init(argc, argv, "vicon");
+  ros::init(argc, argv, "qualisys");
   ros::NodeHandle nh("~");
 
-  mocap::ViconDriver driver(nh);
+  mocap::QualisysDriver driver(nh);
   if(!driver.init()) {
-    ROS_ERROR("Initialization of the Vicon driver failed");
+    ROS_INFO("Initialization of the Qualisys driver failed!");
     return -1;
   }
-  ROS_INFO("Successfully initialize Vicon connection!");
+  ROS_INFO("Successfully initialize Qualisys connection!");
 
   while(ros::ok())
   {

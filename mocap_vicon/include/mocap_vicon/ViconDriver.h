@@ -24,7 +24,7 @@
 #include <set>
 #include <boost/thread.hpp>
 #include <ros/ros.h>
-#include <motion_capture_system/MoCapDriverBase.h>
+#include <mocap_base/MoCapDriverBase.h>
 #include "Client.h"
 
 

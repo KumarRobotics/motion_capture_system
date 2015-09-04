@@ -27,7 +27,7 @@
 #include <Eigen/Geometry>
 #include <ros/ros.h>
 #include <tf/transform_broadcaster.h>
-#include <motion_capture_system/KalmanFilter.h>
+#include <mocap_base/KalmanFilter.h>
 
 namespace mocap{
 

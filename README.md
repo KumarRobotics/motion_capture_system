@@ -1,18 +1,18 @@
 # ROS Driver for Motion Capture Systems
-This package contains ROS drivers for two different motion capture systems,**Vicon** And **Qualisys**.
+This package contains ROS drivers for two different motion capture systems,**Vicon** And **Qualisys** (can be extended to be motion capture system).
 
 ## License
 Apache 2.0 wherever not specified
 
 ## Compiling
-This is a Catkin package. Make sure the package is on `ROS_PACKAGE_PATH` after cloning the package to your workspace.
+This is a Catkin package. Make sure the package is on `ROS_PACKAGE_PATH` after cloning the package to your workspace. Drivers for different motion capture system can be independently compiled.
 
 ```
-roscd motion_capture_system
-catkin_make --pkg motion_capture_system --cmake-args -DCMAKE_BUILD_TYPE=Release
+roscd your_work_space
+catkin_make --pkg mocap_{sys} --cmake-args -DCMAKE_BUILD_TYPE=Release
 ```
 
-This will complie the drivers for both **Vicon** and **Qualisys**
+This will complie the drivers for `{sys}`
 
 ## Example Usage
 
@@ -44,13 +44,17 @@ A vector of subjects of interest. Leave the vector empty if all subjects are to 
 
 **Published Topics**
 
-`\{mocap}\{subject_name}\odom` (`\nav_msgs\Odometry`)
+`\{mocap_sys}\{subject_name}\odom` (`\nav_msgs\Odometry`)
 
 Odometry msg for each specified subject in `model_list`.
 
 **Node**
 
-`roslaunch motion_capture_system {mocap}.launch`
+`roslaunch {mocap_sys} {sys}.launch`
+
+For example,
+
+`roslaunch mocap_vicon vicon.launch`
 
 ## FAQ
 

@@ -16,7 +16,7 @@
 
 #include <nav_msgs/Odometry.h>
 #include <eigen_conversions/eigen_msg.h>
-#include <motion_capture_system/MoCapDriverBase.h>
+#include <mocap_base/MoCapDriverBase.h>
 
 using namespace std;
 using namespace Eigen;
@@ -31,7 +31,7 @@ Subject::Subject(ros::NodeHandle* nptr, const string& sub_name,
   parent_frame (p_frame){
 
   //pub_raw = nh_ptr->advertise<nav_msgs::Odometry>("odom_raw", 10);
-  pub_filter = nh_ptr->advertise<nav_msgs::Odometry>(name+"/odom_filter", 10);
+  pub_filter = nh_ptr->advertise<nav_msgs::Odometry>(name+"/odom", 10);
   return;
 }
 
@@ -115,7 +115,18 @@ void Subject::processNewMeasurement(
   tf::pointEigenToMsg(kFilter.position, odom_filter.pose.pose.position);
   tf::vectorEigenToMsg(kFilter.angular_vel, odom_filter.twist.twist.angular);
   tf::vectorEigenToMsg(kFilter.linear_vel, odom_filter.twist.twist.linear);
-  // TODO: fill in the covariance for the pose and twist
+  // To be compatible with the covariance in ROS, we have to do some shifting
+  Map<Matrix<double, 6, 6, RowMajor> > pose_cov(odom_filter.pose.covariance.begin());
+  Map<Matrix<double, 6, 6, RowMajor> > vel_cov(odom_filter.twist.covariance.begin());
+  pose_cov.topLeftCorner<3, 3>() = kFilter.state_cov.block<3, 3>(3, 3);
+  pose_cov.topRightCorner<3, 3>() = kFilter.state_cov.block<3, 3>(3, 0);
+  pose_cov.bottomLeftCorner<3, 3>() = kFilter.state_cov.block<3, 3>(0, 3);
+  pose_cov.bottomRightCorner<3, 3>() = kFilter.state_cov.block<3, 3>(0, 0);
+  vel_cov.topLeftCorner<3, 3>() = kFilter.state_cov.block<3, 3>(9, 9);
+  vel_cov.topRightCorner<3, 3>() = kFilter.state_cov.block<3, 3>(9, 6);
+  vel_cov.bottomLeftCorner<3, 3>() = kFilter.state_cov.block<3, 3>(6, 9);
+  vel_cov.bottomRightCorner<3, 3>() = kFilter.state_cov.block<3, 3>(6, 6);
+
   pub_filter.publish(odom_filter);
   return;
 }
