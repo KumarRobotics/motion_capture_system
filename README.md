@@ -56,6 +56,8 @@ Odometry msg for each specified subject in `model_list`.
 
 1. Will the msgs be delayed if the driver is handling several subjects? The driver is multi-threaded. It uses different threads to process the msg from different subjects. So, emmmmm, don't worry =).
 
+2. How to calibrate the transformation between the subject frame (centered at the centroid of the markers) and the body frame of a robot? This functionality is not provided, since few people use that now. If you really want that, please consider [vicon repo of KumarRobotics](https://github.com/KumarRobotics/vicon) or [vicon_bridge repo of ethz-asl](https://github.com/ethz-asl/vicon_bridge).
+
 ## Bug Report
 
 Perfer to open an issue. You can also send an E-mail to sunke.polyu@gmail.com.
