@@ -20,7 +20,7 @@
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 #include <tf_conversions/tf_eigen.h>
-#include <motion_capture_system/vicon/ViconDriver.h>
+#include <mocap_vicon/ViconDriver.h>
 
 using namespace std;
 using namespace Eigen;

@@ -23,8 +23,8 @@
 #include <string>
 #include <set>
 #include <ros/ros.h>
-#include <motion_capture_system/MoCapDriverBase.h>
-#include <motion_capture_system/qualisys/RTProtocol.h>
+#include <mocap_base/MoCapDriverBase.h>
+#include <mocap_qualisys/RTProtocol.h>
 
 
 namespace mocap{

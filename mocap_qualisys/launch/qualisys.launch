@@ -1,6 +1,6 @@
 <launch>
-  <node pkg="qualisys"
-    type="qualisys_node"
+  <node pkg="mocap_qualisys"
+    type="mocap_qualisys_node"
     name="qualisys"
     output="screen">
     <param name="server_address" value="192.168.254.1"/>

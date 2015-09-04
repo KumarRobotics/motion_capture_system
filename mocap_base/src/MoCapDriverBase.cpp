@@ -16,7 +16,7 @@
 
 #include <nav_msgs/Odometry.h>
 #include <eigen_conversions/eigen_msg.h>
-#include <motion_capture_system/MoCapDriverBase.h>
+#include <mocap_base/MoCapDriverBase.h>
 
 using namespace std;
 using namespace Eigen;
