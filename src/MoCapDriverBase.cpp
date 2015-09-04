@@ -115,7 +115,18 @@ void Subject::processNewMeasurement(
   tf::pointEigenToMsg(kFilter.position, odom_filter.pose.pose.position);
   tf::vectorEigenToMsg(kFilter.angular_vel, odom_filter.twist.twist.angular);
   tf::vectorEigenToMsg(kFilter.linear_vel, odom_filter.twist.twist.linear);
-  // TODO: fill in the covariance for the pose and twist
+  // To be compatible with the covariance in ROS, we have to do some shifting
+  Map<Matrix<double, 6, 6, RowMajor> > pose_cov(odom_filter.pose.covariance.begin());
+  Map<Matrix<double, 6, 6, RowMajor> > vel_cov(odom_filter.twist.covariance.begin());
+  pose_cov.topLeftCorner<3, 3>() = kFilter.state_cov.block<3, 3>(3, 3);
+  pose_cov.topRightCorner<3, 3>() = kFilter.state_cov.block<3, 3>(3, 0);
+  pose_cov.bottomLeftCorner<3, 3>() = kFilter.state_cov.block<3, 3>(0, 3);
+  pose_cov.bottomRightCorner<3, 3>() = kFilter.state_cov.block<3, 3>(0, 0);
+  vel_cov.topLeftCorner<3, 3>() = kFilter.state_cov.block<3, 3>(9, 9);
+  vel_cov.topRightCorner<3, 3>() = kFilter.state_cov.block<3, 3>(9, 6);
+  vel_cov.bottomLeftCorner<3, 3>() = kFilter.state_cov.block<3, 3>(6, 9);
+  vel_cov.bottomRightCorner<3, 3>() = kFilter.state_cov.block<3, 3>(6, 6);
+
   pub_filter.publish(odom_filter);
   return;
 }
