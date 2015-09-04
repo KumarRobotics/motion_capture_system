@@ -8,6 +8,6 @@
     <param name="max_accel" value="10.0"/>
     <param name="publish_tf" value="true"/>
     <param name="fixed_frame_id" value="mocap"/>
-    <rosparam param="model_list">["QuadrotorGolf"]</rosparam>
+    <rosparam param="model_list">[]</rosparam>
   </node>
 </launch>
