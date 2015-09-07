@@ -196,7 +196,13 @@ void KalmanFilter::update(const Eigen::Quaterniond& m_attitude,
   // TODO: Optimize the whole function
   // Compute the residual of the measurement
   Quaterniond re_q = m_attitude * attitude.inverse();
-  Vector3d re_th(re_q.x()*2.0, re_q.y()*2.0, re_q.z()*2.0);
+  AngleAxisd re_aa(re_q);
+  if (std::abs(re_aa.angle()) > std::abs(2*M_PI-re_aa.angle())) {
+    re_aa.angle() = 2*M_PI - re_aa.angle();
+    re_aa.axis() = -re_aa.axis();
+  }
+  Quaterniond re_qs(re_aa);
+  Vector3d re_th(re_qs.x()*2.0, re_qs.y()*2.0, re_qs.z()*2.0);
   Vector3d re_r = m_position - position;
   Vector6d re;
   re.head<3>() = re_th;
