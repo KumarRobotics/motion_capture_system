@@ -10,5 +10,6 @@
     <param name="publish_tf" value="false"/>
     <param name="fixed_frame_id" value="mocap"/>
     <rosparam param="model_list">[]</rosparam>
+    <!--remap from="vicon/model_name/odom" to="/model_name/odom"/-->
   </node>
 </launch>

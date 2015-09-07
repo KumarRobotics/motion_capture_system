@@ -48,6 +48,10 @@ A vector of subjects of interest. Leave the vector empty if all subjects are to 
 
 Odometry msg for each specified subject in `model_list`.
 
+To be compatible with the name of the topics published of `vicon_odom` in [vicon repo of KumarRobotics](https://github.com/KumarRobotics/vicon). You can uncomment the following line in the launch file
+
+`<remap from="{mocap_sys}\{subject_name}\odom" to="\{subject_name}\odom">`
+
 **Node**
 
 `roslaunch {mocap_sys} {sys}.launch`
