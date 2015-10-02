@@ -6,7 +6,11 @@
 This package contains ROS drivers for two different motion capture systems,**VICON** And **QUALISYS** (can be extended to be motion capture system).
 
 ## License
-Apache 2.0 wherever not specified
+For the VICON driver, we use the [offical SKD](http://www.vicon.com/products/software/datastream-sdk).
+
+For the QUALISYS driver, we use the interface from [Qualisys2Ros](https://github.com/omwdunkley/Qualisys2Ros).
+
+For the rest of the software, the license is Apache 2.0 wherever not specified.
 
 ## Compiling
 This is a Catkin package. Make sure the package is on `ROS_PACKAGE_PATH` after cloning the package to your workspace. Drivers for different motion capture system can be independently compiled.
