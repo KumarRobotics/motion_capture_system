@@ -1,5 +1,9 @@
 # ROS Driver for Motion Capture Systems
-This package contains ROS drivers for two different motion capture systems,**Vicon** And **Qualisys** (can be extended to be motion capture system).
+![VICON Logo](http://www.awn.com/sites/default/files/styles/inline_medium/public/image/featured/1025139-vicon-delivers-motion-capture-innovations-siggraph-2015.jpg?itok=vsH7Prwo)
+
+![QUALISYS Logo](http://isbs2015.sciencesconf.org/conference/isbs2015/pages/Qualisys_Logga_PMS.png)
+
+This package contains ROS drivers for two different motion capture systems,**VICON** And **QUALISYS** (can be extended to be motion capture system).
 
 ## License
 Apache 2.0 wherever not specified
@@ -8,7 +12,7 @@ Apache 2.0 wherever not specified
 This is a Catkin package. Make sure the package is on `ROS_PACKAGE_PATH` after cloning the package to your workspace. Drivers for different motion capture system can be independently compiled.
 
 ```
-roscd your_work_space
+cd your_work_space
 catkin_make --pkg mocap_{sys} --cmake-args -DCMAKE_BUILD_TYPE=Release
 ```
 
