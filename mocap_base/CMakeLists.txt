@@ -28,17 +28,6 @@ include_directories(
 
 add_definitions("-std=c++0x -Wall")
 
-add_library(mocap_base_driver
-  src/MoCapDriverBase.cpp
-)
-target_link_libraries(mocap_base_driver
-  ${catkin_LIBRARIES}
-)
-add_dependencies(mocap_base_driver
-  ${${PROJECT_NAME}_EXPORTED_TARGETS}
-  ${catkin_EXPORTED_TARGETS}
-)
-
 add_library(mocap_kalman_filter
   src/KalmanFilter.cpp
 )
@@ -46,6 +35,18 @@ target_link_libraries(mocap_kalman_filter
   ${catkin_LIBRARIES}
 )
 add_dependencies(mocap_kalman_filter
+  ${${PROJECT_NAME}_EXPORTED_TARGETS}
+  ${catkin_EXPORTED_TARGETS}
+)
+
+add_library(mocap_base_driver
+  src/MoCapDriverBase.cpp
+)
+target_link_libraries(mocap_base_driver
+  ${catkin_LIBRARIES}
+  mocap_kalman_filter
+)
+add_dependencies(mocap_base_driver
   ${${PROJECT_NAME}_EXPORTED_TARGETS}
   ${catkin_EXPORTED_TARGETS}
 )
