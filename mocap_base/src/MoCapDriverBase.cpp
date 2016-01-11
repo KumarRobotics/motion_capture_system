@@ -136,7 +136,6 @@ void Subject::processNewMeasurement(
   pose_raw.header.frame_id = parent_frame;
   tf::quaternionEigenToMsg(m_attitude, pose_raw.pose.orientation);
   tf::pointEigenToMsg(m_position, pose_raw.pose.position);
-
   pub_raw.publish(pose_raw);
 
   return;
