@@ -15,6 +15,7 @@
  */
 
 #include <nav_msgs/Odometry.h>
+#include <geometry_msgs/PoseStamped.h>
 #include <eigen_conversions/eigen_msg.h>
 #include <mocap_base/MoCapDriverBase.h>
 
@@ -31,6 +32,7 @@ Subject::Subject(ros::NodeHandle* nptr, const string& sub_name,
   parent_frame (p_frame){
 
   pub_filter = nh_ptr->advertise<nav_msgs::Odometry>(name+"/odom", 10);
+  pub_raw = nh_ptr->advertise<geometry_msgs::PoseStamped>(name+"/pose", 10);
   return;
 }
 
@@ -127,6 +129,15 @@ void Subject::processNewMeasurement(
   vel_cov.bottomRightCorner<3, 3>() = kFilter.state_cov.block<3, 3>(6, 6);
 
   pub_filter.publish(odom_filter);
+
+  // Publish raw data from mocap system
+  geometry_msgs::PoseStamped pose_raw;
+  pose_raw.header.stamp = ros::Time(time);
+  pose_raw.header.frame_id = parent_frame;
+  tf::quaternionEigenToMsg(m_attitude, pose_raw.pose.orientation);
+  tf::pointEigenToMsg(m_position, pose_raw.pose.position);
+
+  pub_raw.publish(pose_raw);
 
   return;
 }
