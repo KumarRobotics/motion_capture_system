@@ -175,10 +175,10 @@ void QualisysDriver::handleSubject(const int& sub_idx) {
   }
 
   // Qualisys sometimes flips 180 degrees around the x axis
-  if(roll > 90)
-    roll -= 180;
-  else if(roll < -90)
-    roll += 180;
+  //if(roll > 90)
+  //  roll -= 180;
+  //else if(roll < -90)
+  //  roll += 180;
 
   // Convert the msgs to Eigen type
   Eigen::Quaterniond m_att;
@@ -186,7 +186,6 @@ void QualisysDriver::handleSubject(const int& sub_idx) {
       tf::createQuaternionFromRPY(roll*deg2rad, pitch*deg2rad, yaw*deg2rad), m_att);
   // Convert mm to m
   Eigen::Vector3d m_pos(x/1000.0, y/1000.0, z/1000.0);
-
   // Re-enable the object if it is lost previously
   if (subjects[subject_name]->getStatus() == Subject::LOST) {
     subjects[subject_name]->enable();
