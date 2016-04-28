@@ -175,10 +175,10 @@ void QualisysDriver::handleSubject(const int& sub_idx) {
   }
 
   // Qualisys sometimes flips 180 degrees around the x axis
-  if(roll > 90)
-    roll -= 180;
-  else if(roll < -90)
-    roll += 180;
+  //if(roll > 90)
+  //  roll -= 180;
+  //else if(roll < -90)
+  //  roll += 180;
 
   // Convert the msgs to Eigen type
   Eigen::Quaterniond m_att;
