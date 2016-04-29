@@ -79,7 +79,8 @@ void QualisysDriver::run() {
 
   prt_packet = port_protocol.GetRTPacket();
   CRTPacket::EPacketType e_type;
-  port_protocol.GetCurrentFrame(CRTProtocol::Component6dEuler);
+  //port_protocol.GetCurrentFrame(CRTProtocol::Component6dEuler);
+  port_protocol.GetCurrentFrame(CRTProtocol::Component6d);
 
   if(port_protocol.ReceiveRTPacket(e_type, true)) {
 
@@ -112,7 +113,8 @@ void QualisysDriver::run() {
 
 void QualisysDriver::handleFrame() {
   // Number of rigid bodies
-  int body_count = prt_packet->Get6DOFEulerBodyCount();
+  //int body_count = prt_packet->Get6DOFEulerBodyCount();
+  int body_count = prt_packet->Get6DOFBodyCount();
   // Assign each subject with a thread
   map<string, boost::shared_ptr<boost::thread> > subject_threads;
 
@@ -162,9 +164,12 @@ void QualisysDriver::handleSubject(const int& sub_idx) {
   // Name of the subject
   string subject_name(port_protocol.Get6DOFBodyName(sub_idx));
   // Pose of the subject
-  float x, y, z, roll, pitch, yaw;
-  prt_packet->Get6DOFEulerBody(
-      sub_idx, x, y, z, roll, pitch, yaw);
+  float x = 0, y = 0, z = 0;
+  float roll = 0, pitch = 0, yaw = 0;
+  float rotation[9] = {0.0f};
+  //prt_packet->Get6DOFEulerBody(
+  //    sub_idx, x, y, z, roll, pitch, yaw);
+  prt_packet->Get6DOFBody(sub_idx, x, y, z, rotation);
   write_lock.unlock();
 
   // If the subject is lost
@@ -181,9 +186,20 @@ void QualisysDriver::handleSubject(const int& sub_idx) {
   //  roll += 180;
 
   // Convert the msgs to Eigen type
-  Eigen::Quaterniond m_att;
-  tf::quaternionTFToEigen(
-      tf::createQuaternionFromRPY(roll*deg2rad, pitch*deg2rad, yaw*deg2rad), m_att);
+  //Eigen::Map<const Eigen::Matrix3f> m_att_mat(rotation);
+  Eigen::Matrix3d m_att_mat;
+  m_att_mat(0, 0) = rotation[0]; m_att_mat(0, 1) = rotation[1]; m_att_mat(0, 2) = rotation[2];
+  m_att_mat(1, 0) = rotation[3]; m_att_mat(1, 1) = rotation[4]; m_att_mat(1, 2) = rotation[5];
+  m_att_mat(2, 0) = rotation[6]; m_att_mat(2, 1) = rotation[7]; m_att_mat(2, 2) = rotation[8];
+  Eigen::Quaterniond m_att(m_att_mat);
+  //cout << "xyz: " << x/1000 << " " << y/1000 << " " << z/1000 << endl;
+  //cout << rotation[0] << " " << rotation[1] << " " << rotation[2] << endl;
+  //cout << rotation[3] << " " << rotation[4] << " " << rotation[5] << endl;
+  //cout << rotation[6] << " " << rotation[7] << " " << rotation[8] << endl;
+  //cout << m_att_mat << endl;
+  //cout << m_att.toRotationMatrix() << endl << endl;
+  //tf::quaternionTFToEigen(
+  //    tf::createQuaternionFromRPY(roll*deg2rad, pitch*deg2rad, yaw*deg2rad), m_att);
   // Convert mm to m
   Eigen::Vector3d m_pos(x/1000.0, y/1000.0, z/1000.0);
   // Re-enable the object if it is lost previously
