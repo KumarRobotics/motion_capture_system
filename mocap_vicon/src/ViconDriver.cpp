@@ -143,7 +143,7 @@ void ViconDriver::handleFrame() {
       it != subjects.end(); ++it) {
     Subject::Status status = it->second->getStatus();
     if (status == Subject::LOST)
-      ROS_WARN("Lose track of subject %s", (it->first).c_str());
+      ROS_WARN_THROTTLE(1, "Lose track of subject %s", (it->first).c_str());
     else if (status == Subject::INITIALIZING)
       ROS_WARN("Initialize subject %s", (it->first).c_str());
   }
