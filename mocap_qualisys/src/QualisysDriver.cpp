@@ -191,8 +191,18 @@ void QualisysDriver::handleSubject(const int& sub_idx) {
     subjects[subject_name]->enable();
   }
 
+  // Compute the timestamp
+  // double time = ros::Time::now().toSec();
+  if(start_time_local_ == 0)
+  {
+    start_time_local_ = ros::Time::now().toSec();
+    start_time_packet_ = prt_packet->GetTimeStamp() / 1e6;
+  }
+
+  const double packet_time = prt_packet->GetTimeStamp() / 1e6;
+  const double time = start_time_local_ + (packet_time - start_time_packet_);
+
   // Feed the new measurement to the subject
-  double time = ros::Time::now().toSec();
   subjects[subject_name]->processNewMeasurement(time, m_att, m_pos);
 
   // Publish tf if requred

@@ -111,6 +111,9 @@ class QualisysDriver: public MoCapDriverBase{
     // For multi-threading
     boost::shared_mutex mtx;
 
+    // Timestamp stuff
+    double start_time_local_ = 0;
+    double start_time_packet_ = 0;
 };
 }
 
