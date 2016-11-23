@@ -32,6 +32,7 @@ namespace mocap{
 class QualisysDriver: public MoCapDriverBase{
 
   public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     /*
      * @brief Constructor
      * @param nh Ros node
