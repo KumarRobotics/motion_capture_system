@@ -22,17 +22,16 @@ catkin_package(
   CATKIN_DEPENDS
     geometry_msgs tf mocap_base
   DEPENDS
-  Boost Eigen3
+  Boost EIGEN3
 )
 
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
-  ${EIGEN3_INCLUDE_DIR}
+  ${EIGEN3_INCLUDE_DIRS}
 )
 
-add_definitions("-std=c++0x -Wall")
-
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall")
 
 # QUALISYS
 add_library(mocap_qualisys_driver
