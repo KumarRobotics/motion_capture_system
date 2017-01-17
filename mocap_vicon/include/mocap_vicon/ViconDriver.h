@@ -25,7 +25,7 @@
 #include <boost/thread.hpp>
 #include <ros/ros.h>
 #include <mocap_base/MoCapDriverBase.h>
-#include "Client.h"
+#include "DataStreamClient.h"
 
 
 namespace mocap{

@@ -132,9 +132,8 @@ void ViconDriver::handleFrame() {
   }
 
   // Wait for all the threads to stop
-  for (auto it = subject_threads.begin();
-      it != subject_threads.end(); ++it) {
-    it->join();
+  for(auto &thread : subject_threads) {
+    thread.join();
   }
 
   // Send out warnings
