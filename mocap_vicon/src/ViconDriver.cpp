@@ -109,7 +109,8 @@ void ViconDriver::disconnect() {
 void ViconDriver::handleFrame() {
   int body_count = client->GetSubjectCount().SubjectCount;
   // Assign each subject with a thread
-  map<string, boost::shared_ptr<boost::thread> > subject_threads;
+  vector<boost::thread> subject_threads;
+  subject_threads.reserve(body_count);
 
   for (int i = 0; i< body_count; ++i) {
     string subject_name =
@@ -125,9 +126,7 @@ void ViconDriver::handleFrame() {
             process_noise, measurement_noise, frame_rate);
       }
       // Handle the subject in a different thread
-      subject_threads[subject_name] =
-        boost::shared_ptr<boost::thread>(
-          new boost::thread(&ViconDriver::handleSubject, this, i));
+      subject_threads.emplace_back(&ViconDriver::handleSubject, this, i);
       //handleSubject(i);
     }
   }
@@ -135,7 +134,7 @@ void ViconDriver::handleFrame() {
   // Wait for all the threads to stop
   for (auto it = subject_threads.begin();
       it != subject_threads.end(); ++it) {
-    it->second->join();
+    it->join();
   }
 
   // Send out warnings

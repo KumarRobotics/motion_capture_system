@@ -114,7 +114,8 @@ void QualisysDriver::handleFrame() {
   // Number of rigid bodies
   int body_count = prt_packet->Get6DOFEulerBodyCount();
   // Assign each subject with a thread
-  map<string, boost::shared_ptr<boost::thread> > subject_threads;
+  vector<boost::thread> subject_threads;
+  subject_threads.reserve(body_count);
 
   for (int i = 0; i< body_count; ++i) {
     string subject_name(
@@ -130,9 +131,7 @@ void QualisysDriver::handleFrame() {
             process_noise, measurement_noise, frame_rate);
       }
       // Handle the subject in a different thread
-      subject_threads[subject_name] =
-        boost::shared_ptr<boost::thread>(
-          new boost::thread(&QualisysDriver::handleSubject, this, i));
+      subject_threads.emplace_back(&QualisysDriver::handleSubject, this, i);
       //handleSubject(i);
     }
   }
@@ -140,7 +139,7 @@ void QualisysDriver::handleFrame() {
   // Wait for all the threads to stop
   for (auto it = subject_threads.begin();
       it != subject_threads.end(); ++it) {
-    it->second->join();
+    it->join();
   }
 
   // Send out warnings
