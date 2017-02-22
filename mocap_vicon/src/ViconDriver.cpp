@@ -45,7 +45,7 @@ bool ViconDriver::init() {
     Matrix<double, 6, 6>::Identity()*dt*max_accel;
   process_noise *= process_noise; // Make it a covariance
   measurement_noise =
-    Matrix<double, 6, 6>::Identity()*1e-4;
+    Matrix<double, 6, 6>::Identity()*1e-3;
   measurement_noise *= measurement_noise; // Make it a covariance
   model_set.insert(model_list.begin(), model_list.end());
 
