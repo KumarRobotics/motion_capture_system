@@ -33,7 +33,7 @@ bool ViconDriver::init() {
   nh.param("server_address", server_address, string("alkaline2"));
   nh.param("model_list", model_list, vector<string>(0));
   nh.param("frame_rate", frame_rate, 100);
-  nh.param("max_accel", max_accel, 20.0);
+  nh.param("max_accel", max_accel, 10.0);
   nh.param("publish_tf", publish_tf, false);
   nh.param("fixed_frame_id", fixed_frame_id, string("mocap"));
 
@@ -42,9 +42,11 @@ bool ViconDriver::init() {
   process_noise.topLeftCorner<6, 6>() =
     0.5*Matrix<double, 6, 6>::Identity()*dt*dt*max_accel;
   process_noise.bottomRightCorner<6, 6>() =
-    Matrix<double, 6, 6>::Identity()*dt*5*max_accel;
+    Matrix<double, 6, 6>::Identity()*dt*max_accel;
+  process_noise *= process_noise; // Make it a covariance
   measurement_noise =
-    Matrix<double, 6, 6>::Identity()*1e-5;
+    Matrix<double, 6, 6>::Identity()*1e-4;
+  measurement_noise *= measurement_noise; // Make it a covariance
   model_set.insert(model_list.begin(), model_list.end());
 
   timespec ts_sleep;

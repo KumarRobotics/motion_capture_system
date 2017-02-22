@@ -60,7 +60,7 @@ bool KalmanFilter::init(const Matrix12d& u_cov,
   Vector12d u_sigmas = u_svd.singularValues();
   Vector6d m_sigmas = m_svd.singularValues();
 
-  if (u_sigmas(11) < 1e-7) {
+  if (u_sigmas(11) < 1e-10) {
     is_valid = false;
     ROS_ERROR("Input Cov is close to singular (least singlar value:%f < 1e-7)",
         u_sigmas(11));
@@ -68,7 +68,7 @@ bool KalmanFilter::init(const Matrix12d& u_cov,
     input_cov = u_cov;
   }
 
-  if (m_sigmas(5) < 1e-7) {
+  if (m_sigmas(5) < 1e-10) {
     is_valid = false;
     ROS_ERROR("Measurement Cov is close to singular (least singlar value:%f < 1e-7)",
         m_sigmas(5));

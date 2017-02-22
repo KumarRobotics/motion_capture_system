@@ -111,7 +111,7 @@ void Subject::processNewMeasurement(
   nav_msgs::Odometry odom_filter;
   odom_filter.header.stamp = ros::Time(time);
   odom_filter.header.frame_id = parent_frame;
-  odom_filter.child_frame_id = name;
+  odom_filter.child_frame_id = name + "/base_link";
   tf::quaternionEigenToMsg(kFilter.attitude, odom_filter.pose.pose.orientation);
   tf::pointEigenToMsg(kFilter.position, odom_filter.pose.pose.position);
   tf::vectorEigenToMsg(kFilter.angular_vel, odom_filter.twist.twist.angular);
