@@ -29,10 +29,11 @@ if(NOT APPLE)
     message(FATAL_ERROR "32-bit Linux is unsupported!")
   endif()
 else()
-  message(FATAL_ERROR "MacOS is unsupported!")
+    set(SDK_DIR "${PROJECT_SOURCE_DIR}/include/${PROJECT_NAME}/vicon_sdk/OSX64")
 endif()
 #message(STATUS "SDK_DIR: ${SDK_DIR}")
 #message(STATUS "VICON_BOOST_LIBS: ${VICON_BOOST_LIBS}")
+#message(STATUS "VICON_SDK_LIB: ${VICON_SDK_LIB}")
 
 find_library(VICON_SDK_LIB ViconDataStreamSDK_CPP ${SDK_DIR} NO_DEFAULT_PATH)
 
@@ -74,3 +75,8 @@ target_link_libraries(mocap_vicon_node
   mocap_vicon_driver
   ${catkin_LIBRARIES}
 )
+# we need to copy the vicon library to devel to work properly
+if(APPLE)
+file( COPY ${VICON_SDK_LIB} DESTINATION "${CATKIN_DEVEL_PREFIX}/lib" NO_SOURCE_PERMISSIONS )
+endif()
+
