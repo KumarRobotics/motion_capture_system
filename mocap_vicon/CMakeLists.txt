@@ -22,7 +22,6 @@ if(NOT APPLE)
       NO_DEFAULT_PATH)
     find_library(VICON_BOOST_SYSTEM_LIB boost_system-mt ${SDK_DIR}
       NO_DEFAULT_PATH)
-    find_library(VICON_SDK_LIB ViconDataStreamSDK_CPP ${SDK_DIR} NO_DEFAULT_PATH)
     list(REMOVE_ITEM CMAKE_FIND_LIBRARY_SUFFIXES ${VICON_BOOST_LIB_SUFFIX})
     unset(VICON_BOOST_LIB_SUFFIX)
     set(VICON_BOOST_LIBS ${VICON_BOOST_THREAD_LIB} ${VICON_BOOST_SYSTEM_LIB})
@@ -31,12 +30,12 @@ if(NOT APPLE)
   endif()
 else()
     set(SDK_DIR "${PROJECT_SOURCE_DIR}/include/${PROJECT_NAME}/vicon_sdk/OSX64")
-    find_library(VICON_SDK_LIB ViconDataStreamSDK_CPP ${SDK_DIR} NO_DEFAULT_PATH)
 endif()
 #message(STATUS "SDK_DIR: ${SDK_DIR}")
 #message(STATUS "VICON_BOOST_LIBS: ${VICON_BOOST_LIBS}")
 #message(STATUS "VICON_SDK_LIB: ${VICON_SDK_LIB}")
 
+find_library(VICON_SDK_LIB ViconDataStreamSDK_CPP ${SDK_DIR} NO_DEFAULT_PATH)
 
 catkin_package(
   #INCLUDE_DIRS include

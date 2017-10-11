@@ -77,3 +77,7 @@ For example,
 ## Bug Report
 
 Perfer to open an issue. You can also send an E-mail to sunke.polyu@gmail.com.
+
+## OSX Support
+
+You will need to compile ROS from source for OSX first. The vicon node is supported, but the qualisys node is not.  There are no current plans to extend compatibility to OSX for the qualisys driver.
