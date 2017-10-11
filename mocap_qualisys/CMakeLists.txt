@@ -31,6 +31,8 @@ include_directories(
   ${EIGEN3_INCLUDE_DIRS}
 )
 
+
+if(NOT APPLE)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall")
 
 # QUALISYS
@@ -57,4 +59,10 @@ target_link_libraries(mocap_qualisys_node
   mocap_qualisys_driver
   ${catkin_LIBRARIES}
 )
+
+else()
+  message(ERROR " MacOS is unsupported! mocap_qualisys will not be built!")
+endif()
+
+
 
