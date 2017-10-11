@@ -31,7 +31,6 @@ if(NOT APPLE)
   endif()
 else()
     set(SDK_DIR "${PROJECT_SOURCE_DIR}/include/${PROJECT_NAME}/vicon_sdk/OSX64")
-    #set(VICON_BOOST_LIB_SUFFIX ".dylib")
     find_library(VICON_SDK_LIB ViconDataStreamSDK_CPP ${SDK_DIR} NO_DEFAULT_PATH)
 endif()
 #message(STATUS "SDK_DIR: ${SDK_DIR}")
@@ -62,7 +61,7 @@ add_library(mocap_vicon_driver
 )
 target_link_libraries(mocap_vicon_driver
   ${VICON_SDK_LIB}
-  #${VICON_BOOST_LIBS}
+  ${VICON_BOOST_LIBS}
   ${catkin_LIBRARIES}
 )
 add_dependencies(mocap_vicon_driver
