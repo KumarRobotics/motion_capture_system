@@ -96,6 +96,14 @@ void Subject::processNewMeasurement(
 
   boost::unique_lock<boost::shared_mutex> write_lock(mtx);
 
+  // Publish raw data from mocap system
+  geometry_msgs::PoseStamped pose_raw;
+  pose_raw.header.stamp = ros::Time(time);
+  pose_raw.header.frame_id = parent_frame;
+  tf::quaternionEigenToMsg(m_attitude, pose_raw.pose.orientation);
+  tf::pointEigenToMsg(m_position, pose_raw.pose.position);
+  pub_raw.publish(pose_raw);
+
   if (!kFilter.isReady()) {
     status = INITIALIZING;
     kFilter.prepareInitialCondition(time, m_attitude, m_position);
@@ -129,14 +137,6 @@ void Subject::processNewMeasurement(
   vel_cov.bottomRightCorner<3, 3>() = kFilter.state_cov.block<3, 3>(6, 6);
 
   pub_filter.publish(odom_filter);
-
-  // Publish raw data from mocap system
-  geometry_msgs::PoseStamped pose_raw;
-  pose_raw.header.stamp = ros::Time(time);
-  pose_raw.header.frame_id = parent_frame;
-  tf::quaternionEigenToMsg(m_attitude, pose_raw.pose.orientation);
-  tf::pointEigenToMsg(m_position, pose_raw.pose.position);
-  pub_raw.publish(pose_raw);
 
   return;
 }
