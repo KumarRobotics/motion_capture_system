@@ -25,7 +25,7 @@
 #include <boost/thread.hpp>
 #include <ros/ros.h>
 #include <mocap_base/MoCapDriverBase.h>
-#include "DataStreamClient.h"
+#include "ViconDataStreamSDK_CPP/DataStreamClient.h" // From Vicon's SDK
 
 
 namespace mocap{
