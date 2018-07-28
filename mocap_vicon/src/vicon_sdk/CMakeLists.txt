@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 2.8.12)
 
+add_compile_options(-std=c++11)
+
 find_package(Boost REQUIRED COMPONENTS thread)
 
 add_library(ViconDataStreamSDK_CPP
