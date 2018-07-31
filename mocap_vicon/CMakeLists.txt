@@ -13,6 +13,8 @@ find_package(catkin REQUIRED COMPONENTS
   mocap_base
 )
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall")
+
 add_subdirectory(src/vicon_sdk)
 
 catkin_package(
@@ -29,8 +31,6 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIRS}
 )
-
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall")
 
 add_library(mocap_vicon_driver
   src/ViconDriver.cpp
