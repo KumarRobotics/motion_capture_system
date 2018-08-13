@@ -15,16 +15,14 @@ find_package(catkin REQUIRED COMPONENTS
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall")
 
-add_subdirectory(src/vicon_sdk)
-
 catkin_package(
-  #INCLUDE_DIRS include
-  #LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS
-    geometry_msgs tf mocap_base
-  DEPENDS
-  Boost EIGEN3
+  INCLUDE_DIRS include
+  LIBRARIES mocap_vicon_driver ViconDataStreamSDK_CPP
+  CATKIN_DEPENDS roscpp geometry_msgs tf tf_conversions mocap_base
+  DEPENDS Boost EIGEN3
 )
+
+add_subdirectory(src/vicon_sdk)
 
 include_directories(
   include
@@ -52,9 +50,3 @@ target_link_libraries(mocap_vicon_node
   mocap_vicon_driver
   ${catkin_LIBRARIES}
 )
-
-# we need to copy the vicon library to devel to work properly
-if(APPLE)
-  file( COPY ViconDataStreamSDK_CPP DESTINATION "${CATKIN_DEVEL_PREFIX}/lib" NO_SOURCE_PERMISSIONS )
-endif()
-

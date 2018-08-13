@@ -5,7 +5,10 @@
   <description>Driver for Vicon</description>
 
   <maintainer email="sunke.polyu@gmail.com">Ke Sun</maintainer>
+  <maintainer email="kartikmohta@gmail.com">Kartik Mohta</maintainer>
+
   <license>Apache-2.0</license>
+
   <author>Ke Sun</author>
 
   <buildtool_depend>catkin</buildtool_depend>
