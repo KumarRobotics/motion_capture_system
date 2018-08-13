@@ -3,7 +3,7 @@ project(mocap_vicon)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
-find_package(Boost REQUIRED)
+find_package(Boost REQUIRED COMPONENTS thread chrono)
 find_package(Eigen3 REQUIRED)
 find_package(catkin REQUIRED COMPONENTS
   roscpp

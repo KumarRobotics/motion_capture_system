@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 2.8.12)
 
-find_package(Boost REQUIRED COMPONENTS thread)
-
 add_library(ViconDataStreamSDK_CPP
   Vicon/CrossMarket/DataStream/ViconDataStreamSDK_CPP/DataStreamClient.cpp
   Vicon/CrossMarket/DataStream/ViconDataStreamSDKCore/CoreClient.cpp
