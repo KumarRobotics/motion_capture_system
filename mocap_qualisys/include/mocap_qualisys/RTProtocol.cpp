@@ -455,7 +455,7 @@ bool CRTProtocol::GetState(CRTPacket::EEvent &eEvent, bool bUpdate)
         {
             do
             {
-                if (ReceiveRTPacket(eType, false) == false)
+                if (!ReceiveRTPacket(eType, false))
                 {
                     break;
                 }
