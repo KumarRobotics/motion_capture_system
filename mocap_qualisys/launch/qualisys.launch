@@ -3,7 +3,7 @@
     type="mocap_qualisys_node"
     name="qualisys"
     output="screen">
-    <param name="server_address" value="192.168.129.216"/>
+    <param name="server_address" value="11.0.0.10"/>
     <param name="server_base_port" value="22222"/>
     <param name="frame_rate" value="100"/>
     <param name="max_accel" value="10.0"/>

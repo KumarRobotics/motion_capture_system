@@ -78,10 +78,9 @@ void QualisysDriver::disconnect() {
 }
 
 void QualisysDriver::run() {
-
   prt_packet = port_protocol.GetRTPacket();
   CRTPacket::EPacketType e_type;
-  port_protocol.GetCurrentFrame(CRTProtocol::Component6dEuler);
+  port_protocol.GetCurrentFrame(CRTProtocol::Component6d);
 
   if(port_protocol.ReceiveRTPacket(e_type, true)) {
 
@@ -114,7 +113,7 @@ void QualisysDriver::run() {
 
 void QualisysDriver::handleFrame() {
   // Number of rigid bodies
-  int body_count = prt_packet->Get6DOFEulerBodyCount();
+  int body_count = prt_packet->Get6DOFBodyCount();
   // Assign each subject with a thread
   vector<boost::thread> subject_threads;
   subject_threads.reserve(body_count);
@@ -148,10 +147,10 @@ void QualisysDriver::handleFrame() {
   for (auto it = subjects.begin();
       it != subjects.end(); ++it) {
     Subject::Status status = it->second->getStatus();
-    if (status == Subject::LOST)
-      ROS_WARN_THROTTLE(1, "Lose track of subject %s", (it->first).c_str());
-    else if (status == Subject::INITIALIZING)
-      ROS_WARN("Initialize subject %s", (it->first).c_str());
+    // if (status == Subject::LOST)
+    //   ROS_WARN_THROTTLE(1, "Lost track of subject %s", (it->first).c_str());
+    if (status == Subject::INITIALIZING)
+      ROS_WARN_THROTTLE(0.1, "Initializing subject %s", (it->first).c_str());
   }
 
   return;
@@ -163,28 +162,36 @@ void QualisysDriver::handleSubject(const int& sub_idx) {
   // Name of the subject
   string subject_name(port_protocol.Get6DOFBodyName(sub_idx));
   // Pose of the subject
-  float x, y, z, roll, pitch, yaw;
-  prt_packet->Get6DOFEulerBody(
-      sub_idx, x, y, z, roll, pitch, yaw);
+  const unsigned int matrix_size = 9;
+  float x, y, z;
+  float rot_array[matrix_size];
+  prt_packet->Get6DOFBody(sub_idx, x, y, z, rot_array);
   write_lock.unlock();
-
-  // If the subject is lost
-  if(isnan(x) || isnan(y) || isnan(z) ||
-     isnan(roll) || isnan(pitch) || isnan(yaw)) {
-    subjects[subject_name]->disable();
+  // Convert the rotation matrix to a quaternion
+  Eigen::Matrix<float, 3, 3, Eigen::ColMajor> rot_matrix(rot_array);
+  Eigen::Quaterniond m_att(rot_matrix.cast<double>());
+  // Check if the subject is beeing tracked 
+  bool nan_in_matrix = false;
+  for (unsigned int i=0; i < matrix_size; i++){
+    if (isnan(rot_array[i])) {
+      nan_in_matrix = true;
+    }
+  }
+  if(isnan(x) || isnan(y) || isnan(z) || nan_in_matrix) {
+    if(subjects[subject_name]->getStatus() != Subject::LOST){
+      ROS_WARN_THROTTLE(0.1, "Lost track of subject %s", subject_name.c_str());
+      subjects[subject_name]->disable();
+    }
     return;
   }
-
-  // Qualisys sometimes flips 180 degrees around the x axis
-  //if(roll > 90)
-  //  roll -= 180;
-  //else if(roll < -90)
-  //  roll += 180;
-
-  // Convert the msgs to Eigen type
-  Eigen::Quaterniond m_att;
-  tf::quaternionTFToEigen(
-      tf::createQuaternionFromRPY(roll*deg2rad, pitch*deg2rad, yaw*deg2rad), m_att);
+  ROS_DEBUG("%s rot matrix:\n%f,\t%f,\t%f\n%f,\t%f,\t%f\n%f,\t%f,\t%f\n", 
+            subject_name.c_str(),
+            rot_array[0], rot_array[1], rot_array[2], 
+            rot_array[3], rot_array[4], rot_array[5],
+            rot_array[6], rot_array[7], rot_array[8]);
+  ROS_DEBUG("Position\nx: %f,\ty: %f\tz: %f", x/1000.0, y/1000.0, z/1000.0);
+  ROS_DEBUG("Quaternion rotation\nx: %f,\ty: %f,\tz: %f,\tw: %f,\t", 
+            m_att.x(), m_att.y(), m_att.z(), m_att.w());
   // Convert mm to m
   Eigen::Vector3d m_pos(x/1000.0, y/1000.0, z/1000.0);
   // Re-enable the object if it is lost previously

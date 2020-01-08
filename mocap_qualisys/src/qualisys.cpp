@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) {
     ROS_INFO("Initialization of the Qualisys driver failed!");
     return -1;
   }
-  ROS_INFO("Successfully initialize Qualisys connection!");
+  ROS_INFO("Successfully initialized Qualisys connection!");
 
   while(ros::ok())
   {

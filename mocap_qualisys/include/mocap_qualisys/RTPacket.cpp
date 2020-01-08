@@ -782,7 +782,8 @@ bool CRTPacket::Get6DOFBody(unsigned int nBodyIndex, float &fX, float &fY, float
         fZ = (float)SetByteOrder((double*)(mpComponentData[Component6d] + 32 + nBodyIndex * 96));
         for (int i = 0; i < 9; i++)
         {
-            afRotMatrix[i] = (float)SetByteOrder((double*)(mpComponentData[Component6d] + 40 + (i * 4) + nBodyIndex * 96));
+            // Found bug, was converting to double pointers instead of float pointers
+            afRotMatrix[i] = (float)SetByteOrder((float*)(mpComponentData[Component6d] + 40 + (i * 4) + nBodyIndex * 96));
         }
     }
     return true;
