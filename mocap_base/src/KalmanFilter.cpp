@@ -146,7 +146,7 @@ void KalmanFilter::prediction(const double& curr_time_stamp) {
   // Propogate the actual state
   double dt = curr_time_stamp - last_time_stamp;
   //dt = dt > 0 ? dt : msg_interval;
-  dt = dt*0.9 + msg_interval*0.1;
+  //dt = dt*0.9 + msg_interval*0.1;
   Vector3d dw = angular_vel * dt;
   Vector3d dr = linear_vel * dt;
 

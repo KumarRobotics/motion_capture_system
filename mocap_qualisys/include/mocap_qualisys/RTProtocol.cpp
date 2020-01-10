@@ -389,46 +389,53 @@ bool CRTProtocol::StreamFrames(EStreamRate eRate, unsigned int nRateArg, unsigne
 {
     char pCommandStr[256];
 
-    if (eRate == RateFrequencyDivisor)
-    {
-        snprintf(pCommandStr, sizeof(pCommandStr), "StreamFrames FrequencyDivisor:%d ", nRateArg);
-    }
-    else if (eRate == RateFrequency)
-    {
-        snprintf(pCommandStr, sizeof(pCommandStr), "StreamFrames Frequency:%d ", nRateArg);
-    }
-    else if (eRate == RateAllFrames)
-    {
-        snprintf(pCommandStr, sizeof(pCommandStr), "StreamFrames AllFrames ");
-    }
-    else
-    {
-        snprintf(maErrorStr, sizeof(maErrorStr), "No valid rate.");
-        return false;
-    }
-    if (nUDPPort > 0)
-    {
-        if (pUDPAddr != NULL && strlen(pUDPAddr) > 64)
-        {
-            snprintf(maErrorStr, sizeof(maErrorStr), "UDP address string too long.");
-            return false;
-        }
-        snprintf(pCommandStr, sizeof(pCommandStr), "%s UDP%s%s:%d ",
-                 pCommandStr, pUDPAddr != NULL ? ":" : "", pUDPAddr != NULL ? pUDPAddr : "", nUDPPort);
+    // if (eRate == RateFrequencyDivisor)
+    // {
+    //     snprintf(pCommandStr, sizeof(pCommandStr), "StreamFrames FrequencyDivisor:%d ", nRateArg);
+    // }
+    // else if (eRate == RateFrequency)
+    // {
+    //     snprintf(pCommandStr, sizeof(pCommandStr), "StreamFrames Frequency:%d ", nRateArg);
+    // }
+    // else if (eRate == RateAllFrames)
+    // {
+    //     snprintf(pCommandStr, sizeof(pCommandStr), "StreamFrames AllFrames ");
+    // }
+    // else
+    // {
+    //     snprintf(maErrorStr, sizeof(maErrorStr), "No valid rate.");
+    //     return false;
+    // }
+
+    // if (nUDPPort > 0)
+    // {
+    //     if (pUDPAddr != NULL && strlen(pUDPAddr) > 64)
+    //     {
+    //         snprintf(maErrorStr, sizeof(maErrorStr), "UDP address string too long.");
+    //         return false;
+    //     }
+    //     snprintf(pCommandStr, sizeof(pCommandStr), "%s UDP%s%s:%d ",
+    //              pCommandStr, pUDPAddr != NULL ? ":" : "", pUDPAddr != NULL ? pUDPAddr : "", nUDPPort);
+    // }
+    if (nUDPPort > 0) {
+        snprintf(pCommandStr, sizeof(pCommandStr), "StreamFrames AllFrames UDP:%d 6D", nUDPPort);
+    } 
+    else {
+        snprintf(pCommandStr, sizeof(pCommandStr), "StreamFrames AllFrames 6D");
     }
 
-    if (GetComponentString(pCommandStr + strlen(pCommandStr), sizeof(pCommandStr) - strlen(pCommandStr), eComponentType))
-    {
+    // if (GetComponentString(pCommandStr + strlen(pCommandStr), sizeof(pCommandStr) - strlen(pCommandStr), eComponentType))
+    // {
         if (SendCommand(pCommandStr))
         {
             return true;
         }
         snprintf(maErrorStr, sizeof(maErrorStr), "StreamFrames failed.");
-    }
-    else
-    {
-        snprintf(maErrorStr, sizeof(maErrorStr), "DataComponent missing.");
-    }
+    // }
+    // else
+    // {
+    //     snprintf(maErrorStr, sizeof(maErrorStr), "DataComponent missing.");
+    // }
 
     return false;
 }

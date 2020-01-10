@@ -53,11 +53,11 @@ bool QualisysDriver::init() {
   model_set.insert(model_list.begin(), model_list.end());
 
   // Connecting to the server
-  ROS_INFO_STREAM("Connecting to the Qualisys at: "
+  ROS_INFO_STREAM("Connecting to QTM server at: "
       << server_address << ":" << base_port);
 
   if(!port_protocol.Connect((char *)server_address.data(), base_port, 0, 1, 7)) {
-    ROS_FATAL_STREAM("Could not find the Qualisys at: "
+    ROS_FATAL_STREAM("Could not contact QTM server at: "
         << server_address << ":" << base_port);
     return false;
   }
@@ -65,12 +65,21 @@ bool QualisysDriver::init() {
 
   // Get 6DOF settings
   port_protocol.Read6DOFSettings();
+  // Request that the server starts streaming data
+  port_protocol.StreamFrames(
+      CRTProtocol::RateAllFrames,
+      0,
+      0,
+      0,
+      CRTProtocol::Component6d);
 
+  // Reserve threads
+  subject_threads.reserve(port_protocol.Get6DOFBodyCount());
   return true;
 }
 
 void QualisysDriver::disconnect() {
-  ROS_INFO_STREAM("Disconnected with the server "
+  ROS_INFO_STREAM("Disconnected from the QTM server "
       << server_address << ":" << base_port);
   port_protocol.StreamFramesStop();
   port_protocol.Disconnect();
@@ -80,10 +89,8 @@ void QualisysDriver::disconnect() {
 void QualisysDriver::run() {
   prt_packet = port_protocol.GetRTPacket();
   CRTPacket::EPacketType e_type;
-  port_protocol.GetCurrentFrame(CRTProtocol::Component6d);
-
+  //port_protocol.GetCurrentFrame(CRTProtocol::Component6d);
   if(port_protocol.ReceiveRTPacket(e_type, true)) {
-
     switch(e_type) {
       // Case 1 - sHeader.nType 0 indicates an error
       case CRTPacket::PacketError:
@@ -115,8 +122,22 @@ void QualisysDriver::handleFrame() {
   // Number of rigid bodies
   int body_count = prt_packet->Get6DOFBodyCount();
   // Assign each subject with a thread
-  vector<boost::thread> subject_threads;
-  subject_threads.reserve(body_count);
+  // vector<boost::thread> subject_threads;
+  // subject_threads.reserve(body_count);
+
+  // Compute the timestamp
+  unsigned long packet_time = prt_packet->GetTimeStamp();
+  if(start_time_local_ == 0)
+  {
+    start_time_local_ = ros::Time::now().toSec();
+    last_packet_time = packet_time;
+    start_time_packet_ = last_packet_time / 1e6;
+  }
+  else
+  {
+    frame_interval = 0.6*frame_interval + 0.4*(packet_time - last_packet_time)/1e6;
+    last_packet_time = packet_time;
+  }
 
   for (int i = 0; i< body_count; ++i) {
     string subject_name(
@@ -133,7 +154,7 @@ void QualisysDriver::handleFrame() {
       }
       // Handle the subject in a different thread
       subject_threads.emplace_back(&QualisysDriver::handleSubject, this, i);
-      //handleSubject(i);
+      // handleSubject(i);
     }
   }
 
@@ -150,7 +171,7 @@ void QualisysDriver::handleFrame() {
     // if (status == Subject::LOST)
     //   ROS_WARN_THROTTLE(1, "Lost track of subject %s", (it->first).c_str());
     if (status == Subject::INITIALIZING)
-      ROS_WARN_THROTTLE(0.1, "Initializing subject %s", (it->first).c_str());
+      ROS_INFO_THROTTLE(0.1, "Initializing subject %s", (it->first).c_str());
   }
 
   return;
@@ -170,7 +191,7 @@ void QualisysDriver::handleSubject(const int& sub_idx) {
   // Convert the rotation matrix to a quaternion
   Eigen::Matrix<float, 3, 3, Eigen::ColMajor> rot_matrix(rot_array);
   Eigen::Quaterniond m_att(rot_matrix.cast<double>());
-  // Check if the subject is beeing tracked 
+  // Check if the subject is beeing tracked
   bool nan_in_matrix = false;
   for (unsigned int i=0; i < matrix_size; i++){
     if (isnan(rot_array[i])) {
@@ -184,27 +205,19 @@ void QualisysDriver::handleSubject(const int& sub_idx) {
     }
     return;
   }
-  ROS_DEBUG("%s rot matrix:\n%f,\t%f,\t%f\n%f,\t%f,\t%f\n%f,\t%f,\t%f\n", 
+  ROS_DEBUG("%s rot matrix:\n%f,\t%f,\t%f\n%f,\t%f,\t%f\n%f,\t%f,\t%f\n",
             subject_name.c_str(),
-            rot_array[0], rot_array[1], rot_array[2], 
+            rot_array[0], rot_array[1], rot_array[2],
             rot_array[3], rot_array[4], rot_array[5],
             rot_array[6], rot_array[7], rot_array[8]);
   ROS_DEBUG("Position\nx: %f,\ty: %f\tz: %f", x/1000.0, y/1000.0, z/1000.0);
-  ROS_DEBUG("Quaternion rotation\nx: %f,\ty: %f,\tz: %f,\tw: %f,\t", 
+  ROS_DEBUG("Quaternion rotation\nx: %f,\ty: %f,\tz: %f,\tw: %f,\t",
             m_att.x(), m_att.y(), m_att.z(), m_att.w());
   // Convert mm to m
   Eigen::Vector3d m_pos(x/1000.0, y/1000.0, z/1000.0);
   // Re-enable the object if it is lost previously
   if (subjects[subject_name]->getStatus() == Subject::LOST) {
     subjects[subject_name]->enable();
-  }
-
-  // Compute the timestamp
-  // double time = ros::Time::now().toSec();
-  if(start_time_local_ == 0)
-  {
-    start_time_local_ = ros::Time::now().toSec();
-    start_time_packet_ = prt_packet->GetTimeStamp() / 1e6;
   }
 
   const double packet_time = prt_packet->GetTimeStamp() / 1e6;

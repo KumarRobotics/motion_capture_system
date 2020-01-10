@@ -22,9 +22,11 @@
 #include <cmath>
 #include <string>
 #include <set>
+#include <vector>
 #include <ros/ros.h>
 #include <mocap_base/MoCapDriverBase.h>
 #include <mocap_qualisys/RTProtocol.h>
+
 
 
 namespace mocap{
@@ -41,8 +43,10 @@ class QualisysDriver: public MoCapDriverBase{
       MoCapDriverBase   (n),
       max_accel         (10.0),
       frame_interval    (0.01),
+      last_packet_time  (0),
       process_noise     (Eigen::Matrix<double, 12, 12>::Zero()),
-      measurement_noise (Eigen::Matrix<double, 6, 6>::Zero()) {
+      measurement_noise (Eigen::Matrix<double, 6, 6>::Zero()) 
+      {
       return;
     }
 
@@ -105,12 +109,16 @@ class QualisysDriver: public MoCapDriverBase{
     // Average time interval between two frames
     double frame_interval;
 
+    // time point for last frame
+    unsigned long last_packet_time;
+
     // Convariance matrices for initializing kalman filters
     Eigen::Matrix<double, 12, 12> process_noise;
     Eigen::Matrix<double,  6,  6> measurement_noise;
 
     // For multi-threading
     boost::shared_mutex mtx;
+    std::vector<boost::thread> subject_threads;
 
     // Timestamp stuff
     double start_time_local_ = 0;

@@ -31,8 +31,8 @@ Subject::Subject(ros::NodeHandle* nptr, const string& sub_name,
   nh_ptr       (nptr),
   parent_frame (p_frame){
 
-  pub_filter = nh_ptr->advertise<nav_msgs::Odometry>(name+"/odom", 10);
-  pub_raw = nh_ptr->advertise<geometry_msgs::PoseStamped>(name+"/pose", 10);
+  pub_filter = nh_ptr->advertise<nav_msgs::Odometry>(name+"/odom", 1);
+  pub_raw = nh_ptr->advertise<geometry_msgs::PoseStamped>(name+"/pose", 1);
   return;
 }
 
@@ -93,7 +93,8 @@ void Subject::processNewMeasurement(
     const double& time,
     const Quaterniond& m_attitude,
     const Vector3d& m_position) {
-
+  //ros::Time tbefore_filter = ros::Time::now();
+  
   boost::unique_lock<boost::shared_mutex> write_lock(mtx);
 
   // Publish raw data from mocap system
@@ -102,8 +103,8 @@ void Subject::processNewMeasurement(
   pose_raw.header.frame_id = parent_frame;
   tf::quaternionEigenToMsg(m_attitude, pose_raw.pose.orientation);
   tf::pointEigenToMsg(m_position, pose_raw.pose.position);
+  
   pub_raw.publish(pose_raw);
-
   if (!kFilter.isReady()) {
     status = INITIALIZING;
     kFilter.prepareInitialCondition(time, m_attitude, m_position);
@@ -112,9 +113,9 @@ void Subject::processNewMeasurement(
 
   status = TRACKED;
   // Perfrom the kalman filter
+   
   kFilter.prediction(time);
   kFilter.update(m_attitude, m_position);
-
   // Publish the new state
   nav_msgs::Odometry odom_filter;
   odom_filter.header.stamp = ros::Time(time);
@@ -135,8 +136,8 @@ void Subject::processNewMeasurement(
   vel_cov.topRightCorner<3, 3>() = kFilter.state_cov.block<3, 3>(9, 6);
   vel_cov.bottomLeftCorner<3, 3>() = kFilter.state_cov.block<3, 3>(6, 9);
   vel_cov.bottomRightCorner<3, 3>() = kFilter.state_cov.block<3, 3>(6, 6);
-
   pub_filter.publish(odom_filter);
+  //ROS_INFO("filter time: %f", (ros::Time::now() - tbefore_filter).toSec());
 
   return;
 }
