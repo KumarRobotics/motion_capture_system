@@ -30,11 +30,17 @@ int main(int argc, char *argv[]) {
     return -1;
   }
   ROS_INFO("Successfully initialized Qualisys connection!");
-
+  
+  // ros::Rate r(200.0);
   while(ros::ok())
-  {
+  { 
+    //ROS_INFO("Runing");
     driver.run();
+    //ROS_INFO("Spining");
     ros::spinOnce();
+    //ROS_INFO("Sleeping");
+    //ROS_INFO("Cycle time: %f", r.cycleTime().toSec());
+    // r.sleep();
   }
 
   ROS_INFO("Shutting down");

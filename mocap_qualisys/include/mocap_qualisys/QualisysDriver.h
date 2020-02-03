@@ -23,6 +23,7 @@
 #include <string>
 #include <set>
 #include <vector>
+#include <boost/asio.hpp>
 #include <ros/ros.h>
 #include <mocap_base/MoCapDriverBase.h>
 #include <mocap_qualisys/RTProtocol.h>
@@ -45,7 +46,8 @@ class QualisysDriver: public MoCapDriverBase{
       frame_interval    (0.01),
       last_packet_time  (0),
       process_noise     (Eigen::Matrix<double, 12, 12>::Zero()),
-      measurement_noise (Eigen::Matrix<double, 6, 6>::Zero()) 
+      measurement_noise (Eigen::Matrix<double, 6, 6>::Zero())
+      //work              (ioService)
       {
       return;
     }
@@ -85,7 +87,8 @@ class QualisysDriver: public MoCapDriverBase{
     void handleFrame();
 
     // Handle a the info of a single subject
-    void handleSubject(const int& sub_idx);
+    void handleSubject(int sub_idx);
+    // void handleSubject(int sub_idx);
 
     // Unit converter
     static double deg2rad;
@@ -117,8 +120,12 @@ class QualisysDriver: public MoCapDriverBase{
     Eigen::Matrix<double,  6,  6> measurement_noise;
 
     // For multi-threading
-    boost::shared_mutex mtx;
-    std::vector<boost::thread> subject_threads;
+    // int worker_threads = 4;
+    // boost::shared_mutex mtx;
+    // std::vector<boost::thread> subject_threads;
+    // boost::asio::io_service ioService;
+    // boost::thread_group threadpool;
+    // boost::asio::io_service::work work;
 
     // Timestamp stuff
     double start_time_local_ = 0;

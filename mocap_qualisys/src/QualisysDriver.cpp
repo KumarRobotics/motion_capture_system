@@ -39,6 +39,7 @@ bool QualisysDriver::init() {
   nh.param("max_accel", max_accel, 10.0);
   nh.param("publish_tf", publish_tf, false);
   nh.param("fixed_frame_id", fixed_frame_id, string("mocap"));
+  // nh.param("worker_threads",  worker_threads, 8);
 
   frame_interval = 1.0 / static_cast<double>(frame_rate);
   double& dt = frame_interval;
@@ -74,7 +75,11 @@ bool QualisysDriver::init() {
       CRTProtocol::Component6d);
 
   // Reserve threads
-  subject_threads.reserve(port_protocol.Get6DOFBodyCount());
+  // for (int i=0; i<worker_threads; i++){
+  //   threadpool.create_thread(
+  //     boost::bind(&boost::asio::io_service::run, &ioService)  
+  //   );
+  // }
   return true;
 }
 
@@ -87,9 +92,14 @@ void QualisysDriver::disconnect() {
 }
 
 void QualisysDriver::run() {
+  // boost::unique_lock<boost::shared_mutex> write_lock(mtx);
+  //ROS_INFO("Getting packet");
   prt_packet = port_protocol.GetRTPacket();
+  // write_lock.unlock();
+  //ROS_INFO("Packet ot, lock released");
   CRTPacket::EPacketType e_type;
   //port_protocol.GetCurrentFrame(CRTProtocol::Component6d);
+  
   if(port_protocol.ReceiveRTPacket(e_type, true)) {
     switch(e_type) {
       // Case 1 - sHeader.nType 0 indicates an error
@@ -121,10 +131,6 @@ void QualisysDriver::run() {
 void QualisysDriver::handleFrame() {
   // Number of rigid bodies
   int body_count = prt_packet->Get6DOFBodyCount();
-  // Assign each subject with a thread
-  // vector<boost::thread> subject_threads;
-  // subject_threads.reserve(body_count);
-
   // Compute the timestamp
   unsigned long packet_time = prt_packet->GetTimeStamp();
   if(start_time_local_ == 0)
@@ -138,10 +144,9 @@ void QualisysDriver::handleFrame() {
     frame_interval = 0.6*frame_interval + 0.4*(packet_time - last_packet_time)/1e6;
     last_packet_time = packet_time;
   }
-
+  //boost::unique_lock<boost::shared_mutex> write_lock(mtx);
   for (int i = 0; i< body_count; ++i) {
-    string subject_name(
-        port_protocol.Get6DOFBodyName(i));
+    string subject_name(port_protocol.Get6DOFBodyName(i));
 
     // Process the subject if required
     if (model_set.empty() || model_set.count(subject_name)) {
@@ -152,99 +157,85 @@ void QualisysDriver::handleFrame() {
         subjects[subject_name]->setParameters(
             process_noise, measurement_noise, frame_rate);
       }
-      // Handle the subject in a different thread
-      subject_threads.emplace_back(&QualisysDriver::handleSubject, this, i);
-      // handleSubject(i);
+      // Handle the subject in a worker thread
+      //if (worker_threads > 0) {
+      //  ioService.post(boost::bind(&QualisysDriver::handleSubject, this, i));
+      //} else {
+      handleSubject(i);
+      //}
     }
   }
-
-  // Wait for all the threads to stop
-  for (auto it = subject_threads.begin();
-      it != subject_threads.end(); ++it) {
-    it->join();
-  }
-
-  // Send out warnings
-  for (auto it = subjects.begin();
-      it != subjects.end(); ++it) {
-    Subject::Status status = it->second->getStatus();
-    // if (status == Subject::LOST)
-    //   ROS_WARN_THROTTLE(1, "Lost track of subject %s", (it->first).c_str());
-    if (status == Subject::INITIALIZING)
-      ROS_INFO_THROTTLE(0.1, "Initializing subject %s", (it->first).c_str());
-  }
-
+  //write_lock.unlock();
   return;
 }
 
-void QualisysDriver::handleSubject(const int& sub_idx) {
-
-  boost::unique_lock<boost::shared_mutex> write_lock(mtx);
+void QualisysDriver::handleSubject(int sub_idx) {
   // Name of the subject
+  // boost::shared_lock<boost::shared_mutex> read_lock(mtx);
   string subject_name(port_protocol.Get6DOFBodyName(sub_idx));
   // Pose of the subject
   const unsigned int matrix_size = 9;
   float x, y, z;
   float rot_array[matrix_size];
   prt_packet->Get6DOFBody(sub_idx, x, y, z, rot_array);
-  write_lock.unlock();
-  // Convert the rotation matrix to a quaternion
-  Eigen::Matrix<float, 3, 3, Eigen::ColMajor> rot_matrix(rot_array);
-  Eigen::Quaterniond m_att(rot_matrix.cast<double>());
-  // Check if the subject is beeing tracked
+
+  // Check if the subject is tracked by looking for NaN in the received data
   bool nan_in_matrix = false;
   for (unsigned int i=0; i < matrix_size; i++){
     if (isnan(rot_array[i])) {
       nan_in_matrix = true;
+      break;
     }
   }
   if(isnan(x) || isnan(y) || isnan(z) || nan_in_matrix) {
-    if(subjects[subject_name]->getStatus() != Subject::LOST){
-      ROS_WARN_THROTTLE(0.1, "Lost track of subject %s", subject_name.c_str());
-      subjects[subject_name]->disable();
+    if(subjects.at(subject_name)->getStatus() != Subject::LOST){
+      subjects.at(subject_name)->disable();
     }
     return;
   }
-  ROS_DEBUG("%s rot matrix:\n%f,\t%f,\t%f\n%f,\t%f,\t%f\n%f,\t%f,\t%f\n",
-            subject_name.c_str(),
-            rot_array[0], rot_array[1], rot_array[2],
-            rot_array[3], rot_array[4], rot_array[5],
-            rot_array[6], rot_array[7], rot_array[8]);
-  ROS_DEBUG("Position\nx: %f,\ty: %f\tz: %f", x/1000.0, y/1000.0, z/1000.0);
-  ROS_DEBUG("Quaternion rotation\nx: %f,\ty: %f,\tz: %f,\tw: %f,\t",
-            m_att.x(), m_att.y(), m_att.z(), m_att.w());
+  
+  // Convert the rotation matrix to a quaternion
+  Eigen::Matrix<float, 3, 3, Eigen::ColMajor> rot_matrix(rot_array);
+  Eigen::Quaterniond m_att(rot_matrix.cast<double>());
+  // Check if the subject is beeing tracked
+
   // Convert mm to m
   Eigen::Vector3d m_pos(x/1000.0, y/1000.0, z/1000.0);
   // Re-enable the object if it is lost previously
-  if (subjects[subject_name]->getStatus() == Subject::LOST) {
-    subjects[subject_name]->enable();
+  if (subjects.at(subject_name)->getStatus() == Subject::LOST) {
+    subjects.at(subject_name)->enable();
   }
 
   const double packet_time = prt_packet->GetTimeStamp() / 1e6;
   const double time = start_time_local_ + (packet_time - start_time_packet_);
 
   // Feed the new measurement to the subject
-  subjects[subject_name]->processNewMeasurement(time, m_att, m_pos);
+  subjects.at(subject_name)->processNewMeasurement(time, m_att, m_pos);
 
   // Publish tf if requred
   if (publish_tf &&
-      subjects[subject_name]->getStatus() == Subject::TRACKED) {
+      subjects.at(subject_name)->getStatus() == Subject::TRACKED) {
 
-    Quaterniond att = subjects[subject_name]->getAttitude();
-    Vector3d pos = subjects[subject_name]->getPosition();
+    Quaterniond att = subjects.at(subject_name)->getAttitude();
+    Vector3d pos = subjects.at(subject_name)->getPosition();
     tf::Quaternion att_tf;
     tf::Vector3 pos_tf;
     tf::quaternionEigenToTF(att, att_tf);
     tf::vectorEigenToTF(pos, pos_tf);
-
+    ROS_DEBUG("Name: %s,\tindex: %i", subject_name.c_str(), sub_idx);
+    ROS_DEBUG("%s rot matrix:\n%f,\t%f,\t%f\n%f,\t%f,\t%f\n%f,\t%f,\t%f\n",
+            subject_name.c_str(),
+            rot_array[0], rot_array[1], rot_array[2],
+            rot_array[3], rot_array[4], rot_array[5],
+            rot_array[6], rot_array[7], rot_array[8]);
+    ROS_DEBUG("Position\nx: %f,\ty: %f\tz: %f", x/1000.0, y/1000.0, z/1000.0);
+    ROS_DEBUG("Quaternion rotation\nx: %f,\ty: %f,\tz: %f,\tw: %f,\t",
+            att_tf.getX(), att_tf.getY(), att_tf.getZ(), att_tf.getW());
     tf::StampedTransform stamped_transform =
       tf::StampedTransform(tf::Transform(att_tf, pos_tf),
-        ros::Time::now(), fixed_frame_id, subject_name);
-    write_lock.lock();
+        ros::Time(time), fixed_frame_id, subject_name);
     tf_publisher.sendTransform(stamped_transform);
-    write_lock.unlock();
   }
-
   return;
 }
 }

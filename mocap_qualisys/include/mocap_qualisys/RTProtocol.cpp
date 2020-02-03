@@ -864,7 +864,7 @@ CRTPacket* CRTProtocol::ReceiveRTPacket(CRTPacket::EPacketType &eType, bool bSki
                     nReadSize = nFrameSize - nRecvedTotal;
                     if (nFrameSize > sizeof(maDataBuff))
                     {
-                        nReadSize = sizeof(maDataBuff);
+                        nReadSize = sizeof(maDataBuff); //WARN Possible overflow
                     }
                     // As long as we haven't received enough data, wait for more
                     nRecved = mpoNetwork->Receive(&(maDataBuff[sizeof(int) * 2]), nReadSize, false, nTimeout);

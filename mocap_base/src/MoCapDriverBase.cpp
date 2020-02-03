@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <ros/ros.h>
 #include <nav_msgs/Odometry.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <eigen_conversions/eigen_msg.h>
@@ -54,11 +55,13 @@ const Subject::Status& Subject::getStatus() {
 void Subject::enable() {
   boost::unique_lock<boost::shared_mutex> write_lock(mtx);
   status = INITIALIZING;
+  ROS_INFO("Initializing subject %s", name.c_str());
 }
 void Subject::disable() {
   boost::unique_lock<boost::shared_mutex> write_lock(mtx);
   kFilter.reset();
   status = LOST;
+  ROS_WARN("Lost track of subject %s", name.c_str());
 }
 
 // Get the state of the subject

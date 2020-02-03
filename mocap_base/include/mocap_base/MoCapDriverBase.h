@@ -186,7 +186,7 @@ class MoCapDriverBase{
      *  from the motion capture system
      * @param sub_idx Index of the subject to be handled
      */
-    virtual void handleSubject(const int& sub_idx) = 0;
+    virtual void handleSubject(int sub_idx) = 0;
 
     // Address of the server
     std::string server_address;

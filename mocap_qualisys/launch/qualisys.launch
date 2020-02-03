@@ -9,6 +9,7 @@
     <param name="max_accel" value="10.0"/>
     <param name="publish_tf" value="true"/>
     <param name="fixed_frame_id" value="mocap"/>
+    <!-- <param name="worker_threads" value="2"/> -->
     <rosparam param="model_list">[]</rosparam>
     <!--remap from="qualisys/F450/odom" to="/f450/odom"/-->
   </node>

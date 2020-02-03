@@ -151,7 +151,7 @@ void ViconDriver::handleFrame() {
   return;
 }
 
-void ViconDriver::handleSubject(const int& sub_idx) {
+void ViconDriver::handleSubject(int sub_idx) {
 
   boost::unique_lock<boost::shared_mutex> write_lock(mtx);
   // We assume each subject has only one segment

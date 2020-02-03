@@ -84,7 +84,7 @@ class ViconDriver: public MoCapDriverBase {
     void handleFrame();
 
     // Handle a the info of a single subject
-    void handleSubject(const int& sub_idx);
+    void handleSubject(int sub_idx);
 
     // Portal to communicate with the server
     ViconDataStreamSDK::CPP::Client* client;

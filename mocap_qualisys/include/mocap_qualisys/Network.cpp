@@ -284,7 +284,7 @@ int CNetwork::Receive(char* rtDataBuff, int nDataBufSize, bool bHeader, int nTim
 
 	if (IsSOCKET)
 	{
-		nRecved = recv(mhSocket, rtDataBuff, bHeader ? 8 : nDataBufSize, 0);
+		nRecved = recv(mhSocket, rtDataBuff, bHeader ? 8 : nDataBufSize, MSG_WAITALL); //
 	}
 	else if (IsUDPSOCKET)
 	{
