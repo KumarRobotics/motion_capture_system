@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<!--
+
+-->
+<launch>
+
+  <node pkg="mocap_qualisys"
+    type="mocap_qualisys_node"
+    name="qualisys"
+    output="screen">
+    <param name="server_address" value="11.0.0.10"/>
+    <param name="server_base_port" value="22222"/>
+    <param name="frame_rate" value="100"/>
+    <param name="max_accel" value="10.0"/>
+    <param name="publish_tf" value="false"/>
+    <param name="fixed_frame_id" value="mocap"/>
+    <rosparam param="model_list">[]</rosparam>
+    <!--remap from="qualisys/F450/odom" to="/f450/odom"/-->
+  </node>
+   
+   <node pkg="svea_sensors"
+    type="synchronize_qualisys.py"
+    name="sync_mocap"
+    output="screen">
+    <param name="parent_topic" value="/qualisys/SVEA6/pose"/>
+    <param name="child_topic" value="/odometry/filtered"/>
+    <param name="buffer_size" value="100"/>
+  </node>
+  
+</launch>
