@@ -58,22 +58,35 @@ bool QualisysDriver::init() {
       << server_address << ":" << base_port);
 
   if(!port_protocol.Connect((char *)server_address.data(), base_port, 0, 1, 7)) {
-    ROS_FATAL_STREAM("Could not contact QTM server at: "
-        << server_address << ":" << base_port);
+    ROS_FATAL_STREAM("Connection to QTM server at: "
+        << server_address << ":" << base_port << "failed\n"
+        "Reason: " << port_protocol.GetErrorString());
+
     return false;
   }
   ROS_INFO_STREAM("Connected to " << server_address << ":" << base_port);
 
   // Get 6DOF settings
-  port_protocol.Read6DOFSettings();
+  bool  bDataAvailable = false;
+  port_protocol.Read6DOFSettings(bDataAvailable);
+  if (bDataAvailable == false) {
+    ROS_FATAL_STREAM("Reading 6DOF body settings failed during intialization\n"
+                  << "QTM error: " << port_protocol.GetErrorString());
+    return false;
+  }
   // Request that the server starts streaming data
-  port_protocol.StreamFrames(
+  bDataAvailable = port_protocol.StreamFrames(
       CRTProtocol::RateAllFrames,
       0,
       0,
       0,
-      CRTProtocol::Component6d);
+      CRTProtocol::cComponent6d);
 
+  if (bDataAvailable == false) {
+     ROS_FATAL_STREAM("Starting 6DOF frame stream failed during intialization\n"
+                   << "QTM error: " << port_protocol.GetErrorString());
+    return false;
+  }
   // Reserve threads
   // for (int i=0; i<worker_threads; i++){
   //   threadpool.create_thread(
@@ -84,14 +97,14 @@ bool QualisysDriver::init() {
 }
 
 void QualisysDriver::disconnect() {
-  ROS_INFO_STREAM("Disconnected from the QTM server "
+  ROS_INFO_STREAM("Disconnected from the QTM server at "
       << server_address << ":" << base_port);
   port_protocol.StreamFramesStop();
   port_protocol.Disconnect();
   return;
 }
 
-void QualisysDriver::run() {
+bool QualisysDriver::run() {
   // boost::unique_lock<boost::shared_mutex> write_lock(mtx);
   //ROS_INFO("Getting packet");
   prt_packet = port_protocol.GetRTPacket();
@@ -99,7 +112,8 @@ void QualisysDriver::run() {
   //ROS_INFO("Packet ot, lock released");
   CRTPacket::EPacketType e_type;
   //port_protocol.GetCurrentFrame(CRTProtocol::Component6d);
-  
+  bool is_ok = false;
+
   if(port_protocol.ReceiveRTPacket(e_type, true)) {
     switch(e_type) {
       // Case 1 - sHeader.nType 0 indicates an error
@@ -111,21 +125,25 @@ void QualisysDriver::run() {
 
       // Case 2 - No more data
       case CRTPacket::PacketNoMoreData:
-        ROS_WARN_STREAM_THROTTLE(1, "No more data");
+        ROS_ERROR_STREAM_THROTTLE(1, "No more data, check if RT capture is active");
         break;
 
       // Case 3 - Data received
       case CRTPacket::PacketData:
         handleFrame();
+        is_ok = true;
+        break;
+
+      // Case 9 - None type, sent on disconnet
+      case CRTPacket::PacketNone:
         break;
 
       default:
-        ROS_ERROR_THROTTLE(1, "Unknown CRTPacket case");
+        ROS_WARN_THROTTLE(1, "Unhandled CRTPacket type, case: %i", e_type);
         break;
     }
   }
-
-  return;
+  return is_ok;
 }
 
 void QualisysDriver::handleFrame() {

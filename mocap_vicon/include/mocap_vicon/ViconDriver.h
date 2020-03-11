@@ -66,7 +66,7 @@ class ViconDriver: public MoCapDriverBase {
     /*
      * @brief run Start acquiring data from the server
      */
-    void run();
+    bool run();
 
     /*
      * @brief disconnect Disconnect to the server

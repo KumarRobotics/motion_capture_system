@@ -160,7 +160,7 @@ class MoCapDriverBase{
     /*
      * @brief run Start acquiring data from the server once
      */
-    virtual void run() = 0;
+    virtual bool run() = 0;
 
     /*
      * @brief disconnect Disconnect to the server

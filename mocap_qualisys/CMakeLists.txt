@@ -39,7 +39,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall")
 add_library(mocap_qualisys_driver
   src/QualisysDriver.cpp
   include/mocap_qualisys/RTProtocol.cpp
-  include/mocap_qualisys/NBC_Markup.cpp
+  include/mocap_qualisys/Markup.cpp
   include/mocap_qualisys/RTPacket.cpp
   include/mocap_qualisys/Network.cpp
 )

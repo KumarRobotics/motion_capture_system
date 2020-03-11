@@ -93,12 +93,12 @@ bool ViconDriver::init() {
   return true;
 }
 
-void ViconDriver::run() {
+ bool ViconDriver::run() {
   ViconSDK::Result::Enum result = client->GetFrame().Result;
   if (result != ViconSDK::Result::Success)
-    return;
+    return false;
   handleFrame();
-  return;
+  return true;
 }
 
 void ViconDriver::disconnect() {
