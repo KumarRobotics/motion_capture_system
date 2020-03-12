@@ -17,6 +17,7 @@
  */
 
 #include <cmath>
+#include <climits>
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 #include <tf_conversions/tf_eigen.h>
@@ -32,15 +33,32 @@ double QualisysDriver::deg2rad = M_PI / 180.0;
 bool QualisysDriver::init() {
   // The base port (as entered in QTM, TCP/IP port number, in the RT output tab
   // of the workspace options
-  nh.param("server_address", server_address, string("192.168.254.1"));
+  nh.param("server_address", server_address, string(""));
   nh.param("server_base_port", base_port, 22222);
   nh.param("model_list", model_list, vector<string>(0));
   nh.param("frame_rate", frame_rate, 100);
   nh.param("max_accel", max_accel, 10.0);
   nh.param("publish_tf", publish_tf, false);
   nh.param("fixed_frame_id", fixed_frame_id, string("mocap"));
-  // nh.param("worker_threads",  worker_threads, 8);
+  int int_udp_port;
+  nh.param("udp_port", int_udp_port, -1);
+  nh.param("qtm_protocol_version", qtm_protocol_version, 18);
 
+  if (server_address.empty()){
+    ROS_FATAL("server_address parameter empty");
+    return false;
+  }
+
+  udp_stream_port = 0;
+  unsigned short* udp_port_ptr = nullptr;
+  if (int_udp_port >= 0 && int_udp_port < USHRT_MAX){
+    udp_stream_port = static_cast<unsigned short>(int_udp_port);
+    udp_port_ptr = &udp_stream_port;
+  }
+  else if (int_udp_port < -1 || int_udp_port > USHRT_MAX){
+    ROS_WARN("Invalid UDP port %i, falling back to TCP", int_udp_port);
+  }
+ 
   frame_interval = 1.0 / static_cast<double>(frame_rate);
   double& dt = frame_interval;
   process_noise.topLeftCorner<6, 6>() =
@@ -56,30 +74,38 @@ bool QualisysDriver::init() {
   // Connecting to the server
   ROS_INFO_STREAM("Connecting to QTM server at: "
       << server_address << ":" << base_port);
-
-  if(!port_protocol.Connect((char *)server_address.data(), base_port, 0, 1, 7)) {
+  // Major protocol version is always 1, so only the minor version can be set
+  const int major_protocol_version = 1;
+  int minor_protocol_version = qtm_protocol_version;
+  if(!port_protocol.Connect((char *)server_address.data(), 
+                            base_port, 
+                            udp_port_ptr, 
+                            major_protocol_version, 
+                            minor_protocol_version)) {
     ROS_FATAL_STREAM("Connection to QTM server at: "
-        << server_address << ":" << base_port << "failed\n"
+        << server_address << ":" << base_port << " failed\n"
         "Reason: " << port_protocol.GetErrorString());
-
     return false;
   }
   ROS_INFO_STREAM("Connected to " << server_address << ":" << base_port);
-
+  if (udp_stream_port > 0) 
+  {
+    ROS_INFO("Streaming data to UDP port %i", udp_stream_port);
+  }
   // Get 6DOF settings
-  bool  bDataAvailable = false;
+  bool bDataAvailable = false;
   port_protocol.Read6DOFSettings(bDataAvailable);
   if (bDataAvailable == false) {
     ROS_FATAL_STREAM("Reading 6DOF body settings failed during intialization\n"
                   << "QTM error: " << port_protocol.GetErrorString());
     return false;
   }
-  // Request that the server starts streaming data
+  // Start streaming data frames
   bDataAvailable = port_protocol.StreamFrames(
       CRTProtocol::RateAllFrames,
-      0,
-      0,
-      0,
+      0, // nRateArg
+      udp_stream_port, // nUDPPort
+      nullptr, // nUDPAddr
       CRTProtocol::cComponent6d);
 
   if (bDataAvailable == false) {
@@ -87,12 +113,6 @@ bool QualisysDriver::init() {
                    << "QTM error: " << port_protocol.GetErrorString());
     return false;
   }
-  // Reserve threads
-  // for (int i=0; i<worker_threads; i++){
-  //   threadpool.create_thread(
-  //     boost::bind(&boost::asio::io_service::run, &ioService)  
-  //   );
-  // }
   return true;
 }
 
@@ -105,13 +125,8 @@ void QualisysDriver::disconnect() {
 }
 
 bool QualisysDriver::run() {
-  // boost::unique_lock<boost::shared_mutex> write_lock(mtx);
-  //ROS_INFO("Getting packet");
   prt_packet = port_protocol.GetRTPacket();
-  // write_lock.unlock();
-  //ROS_INFO("Packet ot, lock released");
   CRTPacket::EPacketType e_type;
-  //port_protocol.GetCurrentFrame(CRTProtocol::Component6d);
   bool is_ok = false;
 
   if(port_protocol.ReceiveRTPacket(e_type, true)) {
@@ -134,7 +149,7 @@ bool QualisysDriver::run() {
         is_ok = true;
         break;
 
-      // Case 9 - None type, sent on disconnet
+      //Case 9 - None type, sent on disconnet
       case CRTPacket::PacketNone:
         break;
 
@@ -142,6 +157,9 @@ bool QualisysDriver::run() {
         ROS_WARN_THROTTLE(1, "Unhandled CRTPacket type, case: %i", e_type);
         break;
     }
+  }
+  else { // 
+    ROS_ERROR_STREAM("QTM error when receiving packet:\n" << port_protocol.GetErrorString());
   }
   return is_ok;
 }
@@ -162,7 +180,6 @@ void QualisysDriver::handleFrame() {
     frame_interval = 0.6*frame_interval + 0.4*(packet_time - last_packet_time)/1e6;
     last_packet_time = packet_time;
   }
-  //boost::unique_lock<boost::shared_mutex> write_lock(mtx);
   for (int i = 0; i< body_count; ++i) {
     string subject_name(port_protocol.Get6DOFBodyName(i));
 
@@ -175,21 +192,14 @@ void QualisysDriver::handleFrame() {
         subjects[subject_name]->setParameters(
             process_noise, measurement_noise, frame_rate);
       }
-      // Handle the subject in a worker thread
-      //if (worker_threads > 0) {
-      //  ioService.post(boost::bind(&QualisysDriver::handleSubject, this, i));
-      //} else {
       handleSubject(i);
-      //}
     }
   }
-  //write_lock.unlock();
   return;
 }
 
 void QualisysDriver::handleSubject(int sub_idx) {
   // Name of the subject
-  // boost::shared_lock<boost::shared_mutex> read_lock(mtx);
   string subject_name(port_protocol.Get6DOFBodyName(sub_idx));
   // Pose of the subject
   const unsigned int matrix_size = 9;

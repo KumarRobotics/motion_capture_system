@@ -47,7 +47,6 @@ class QualisysDriver: public MoCapDriverBase{
       last_packet_time  (0),
       process_noise     (Eigen::Matrix<double, 12, 12>::Zero()),
       measurement_noise (Eigen::Matrix<double, 6, 6>::Zero())
-      //work              (ioService)
       {
       return;
     }
@@ -96,6 +95,13 @@ class QualisysDriver: public MoCapDriverBase{
     // Port of the server to be connected
     int base_port;
 
+    // Port that the server should stream UDP packets to.
+    // 0 indicates that TCP is used.
+    unsigned short udp_stream_port;
+
+    // Minor version of the QTM protocol
+    int qtm_protocol_version;
+
     // Protocol to connect to the server
     CRTProtocol port_protocol;
 
@@ -118,14 +124,6 @@ class QualisysDriver: public MoCapDriverBase{
     // Convariance matrices for initializing kalman filters
     Eigen::Matrix<double, 12, 12> process_noise;
     Eigen::Matrix<double,  6,  6> measurement_noise;
-
-    // For multi-threading
-    // int worker_threads = 4;
-    // boost::shared_mutex mtx;
-    // std::vector<boost::thread> subject_threads;
-    // boost::asio::io_service ioService;
-    // boost::thread_group threadpool;
-    // boost::asio::io_service::work work;
 
     // Timestamp stuff
     double start_time_local_ = 0;

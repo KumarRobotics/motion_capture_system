@@ -16,7 +16,6 @@
 #include "Markup.h"
 #include "Network.h"
 #include <stdexcept>
-
 #ifdef _WIN32
 #include <iphlpapi.h>
 // import the internet protocol helper library.
@@ -262,7 +261,6 @@ bool CRTProtocol::SetVersion(int nMajorVersion, int nMinorVersion)
             mpoRTPacket->SetVersion(mnMajorVersion, mnMinorVersion);
             return true;
         }
-
         if (pResponseStr)
         {
             sprintf(maErrorStr, "%s.", pResponseStr);
@@ -272,7 +270,11 @@ bool CRTProtocol::SetVersion(int nMajorVersion, int nMinorVersion)
             strcpy(maErrorStr, "Set Version failed.");
         }
     }
-    else
+    else if (pResponseStr) 
+    {
+        sprintf(maErrorStr, "Set Version to %s failed: %s.", tTemp, pResponseStr);
+    }
+    else 
     {
         strcpy(tTemp, maErrorStr);
         sprintf(maErrorStr, "Send Version failed. %s.", tTemp);
@@ -280,19 +282,18 @@ bool CRTProtocol::SetVersion(int nMajorVersion, int nMinorVersion)
     return false;
 }
 
-
 bool CRTProtocol::GetVersion(unsigned int &nMajorVersion, unsigned int &nMinorVersion)
 {
     if (!Connected())
     {
+        strcpy(maErrorStr, "Get version failed. Not connected");
         return false;
     }
-
     nMajorVersion = mnMajorVersion;
     nMinorVersion = mnMinorVersion;
-
     return true;
 }
+
 
 
 bool CRTProtocol::GetQTMVersion(char* pVersion, unsigned int nVersionLen)
@@ -5284,8 +5285,8 @@ char* CRTProtocol::GetErrorString()
 
 bool CRTProtocol::SendString(const char* pCmdStr, int nType)
 {
-    int         nSize;
-    int         nCmdStrLen = (int)strlen(pCmdStr);
+    size_t nSize;
+    size_t nCmdStrLen = strlen(pCmdStr);
 
     if (nCmdStrLen > sizeof(mSendBuffer))
     {

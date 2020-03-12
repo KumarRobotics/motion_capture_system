@@ -9,7 +9,11 @@
     <param name="max_accel" value="10.0"/>
     <param name="publish_tf" value="true"/>
     <param name="fixed_frame_id" value="mocap"/>
-    <!-- <param name="worker_threads" value="2"/> -->
+    <!-- UDP port can be set to -1 to request a TCP stream,
+    setting 0 requests a random port, any other positive value 
+    requests that specific port -->
+    <param name="udp_port" value="0"/>
+    <param name="qtm_protocol_version" value="18"/>
     <rosparam param="model_list">[]</rosparam>
     <!--remap from="qualisys/F450/odom" to="/f450/odom"/-->
   </node>
