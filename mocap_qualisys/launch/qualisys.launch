@@ -5,7 +5,7 @@
     output="screen">
     <param name="server_address" value="11.0.0.10"/>
     <param name="server_base_port" value="22222"/>
-    <param name="frame_rate" value="100"/>
+    <param name="frame_rate" value="0"/>
     <param name="max_accel" value="10.0"/>
     <param name="publish_tf" value="true"/>
     <param name="fixed_frame_id" value="mocap"/>

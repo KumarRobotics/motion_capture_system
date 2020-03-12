@@ -195,7 +195,7 @@ class MoCapDriverBase{
     ros::NodeHandle nh;
 
     // Frame rate of the mocap system
-    int frame_rate;
+    unsigned int frame_rate;
 
     // Rigid body to be tracked
     // Empty string if all the objects in the arena are to be tracked

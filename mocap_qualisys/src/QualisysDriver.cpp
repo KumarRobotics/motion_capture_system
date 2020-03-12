@@ -36,7 +36,9 @@ bool QualisysDriver::init() {
   nh.param("server_address", server_address, string(""));
   nh.param("server_base_port", base_port, 22222);
   nh.param("model_list", model_list, vector<string>(0));
-  nh.param("frame_rate", frame_rate, 100);
+  int unsigned_frame_rate;
+  nh.param("frame_rate", unsigned_frame_rate, 0);
+  frame_rate = unsigned_frame_rate > 0 ? unsigned_frame_rate : 0;
   nh.param("max_accel", max_accel, 10.0);
   nh.param("publish_tf", publish_tf, false);
   nh.param("fixed_frame_id", fixed_frame_id, string("mocap"));
@@ -58,30 +60,17 @@ bool QualisysDriver::init() {
   else if (int_udp_port < -1 || int_udp_port > USHRT_MAX){
     ROS_WARN("Invalid UDP port %i, falling back to TCP", int_udp_port);
   }
- 
-  frame_interval = 1.0 / static_cast<double>(frame_rate);
-  double& dt = frame_interval;
-  process_noise.topLeftCorner<6, 6>() =
-    0.5*Matrix<double, 6, 6>::Identity()*dt*dt*max_accel;
-  process_noise.bottomRightCorner<6, 6>() =
-    Matrix<double, 6, 6>::Identity()*dt*max_accel;
-  process_noise *= process_noise; // Make it a covariance
-  measurement_noise =
-    Matrix<double, 6, 6>::Identity()*1e-3;
-  measurement_noise *= measurement_noise; // Make it a covariance
-  model_set.insert(model_list.begin(), model_list.end());
-
   // Connecting to the server
   ROS_INFO_STREAM("Connecting to QTM server at: "
       << server_address << ":" << base_port);
   // Major protocol version is always 1, so only the minor version can be set
   const int major_protocol_version = 1;
   int minor_protocol_version = qtm_protocol_version;
-  if(!port_protocol.Connect((char *)server_address.data(), 
-                            base_port, 
-                            udp_port_ptr, 
-                            major_protocol_version, 
-                            minor_protocol_version)) {
+  if (!port_protocol.Connect((char *)server_address.data(), 
+                             base_port, 
+                             udp_port_ptr, 
+                             major_protocol_version, 
+                             minor_protocol_version)) {
     ROS_FATAL_STREAM("Connection to QTM server at: "
         << server_address << ":" << base_port << " failed\n"
         "Reason: " << port_protocol.GetErrorString());
@@ -100,19 +89,44 @@ bool QualisysDriver::init() {
                   << "QTM error: " << port_protocol.GetErrorString());
     return false;
   }
-  // Start streaming data frames
-  bDataAvailable = port_protocol.StreamFrames(
-      CRTProtocol::RateAllFrames,
-      0, // nRateArg
-      udp_stream_port, // nUDPPort
-      nullptr, // nUDPAddr
-      CRTProtocol::cComponent6d);
-
-  if (bDataAvailable == false) {
-     ROS_FATAL_STREAM("Starting 6DOF frame stream failed during intialization\n"
+  // Read system settings
+  if (!port_protocol.ReadCameraSystemSettings()){
+    ROS_FATAL_STREAM("Failed to read system settings during intialization\n"
                    << "QTM error: " << port_protocol.GetErrorString());
     return false;
   }
+  // Start streaming data frames
+  unsigned int system_frequency = port_protocol.GetSystemFrequency();
+  CRTProtocol::EStreamRate stream_rate_mode = CRTProtocol::EStreamRate::RateAllFrames;
+  double dt = 1.0/(double)system_frequency;
+  if (frame_rate < system_frequency && frame_rate > 0){
+    stream_rate_mode = CRTProtocol::EStreamRate::RateFrequency;
+    dt = 1.0/frame_rate;
+  }
+  else {
+    if (frame_rate > system_frequency){
+      ROS_WARN("Requested capture rate %i larger than current system capture rate %i.", 
+               frame_rate, system_frequency);
+            }
+    frame_rate = system_frequency;
+  }
+  bDataAvailable = port_protocol.StreamFrames(
+      stream_rate_mode,
+      frame_rate, // nRateArg
+      udp_stream_port, // nUDPPort
+      nullptr, // nUDPAddr
+      CRTProtocol::cComponent6d);
+  ROS_INFO("Frame rate: %i frames per second", frame_rate);
+  // Calculate covariance matrices
+  process_noise.topLeftCorner<6, 6>() =
+    0.5*Matrix<double, 6, 6>::Identity()*dt*dt*max_accel;
+  process_noise.bottomRightCorner<6, 6>() =
+    Matrix<double, 6, 6>::Identity()*dt*max_accel;
+  process_noise *= process_noise; // Make it a covariance
+  measurement_noise =
+    Matrix<double, 6, 6>::Identity()*1e-3;
+  measurement_noise *= measurement_noise; // Make it a covariance
+  model_set.insert(model_list.begin(), model_list.end());
   return true;
 }
 
@@ -168,17 +182,21 @@ void QualisysDriver::handleFrame() {
   // Number of rigid bodies
   int body_count = prt_packet->Get6DOFBodyCount();
   // Compute the timestamp
-  unsigned long packet_time = prt_packet->GetTimeStamp();
+  static double previous_frame_time = 0.0;
+  double current_frame_time = prt_packet->GetTimeStamp() / 1e6;
   if(start_time_local_ == 0)
   {
     start_time_local_ = ros::Time::now().toSec();
-    last_packet_time = packet_time;
-    start_time_packet_ = last_packet_time / 1e6;
+    start_time_packet_ = current_frame_time;
+    previous_frame_time = current_frame_time;
   }
-  else
-  {
-    frame_interval = 0.6*frame_interval + 0.4*(packet_time - last_packet_time)/1e6;
-    last_packet_time = packet_time;
+  else if (previous_frame_time > current_frame_time){
+    ROS_WARN("Dropped old frame from time %fdropped, previous frame was from time %f", 
+             current_frame_time, previous_frame_time);
+  }
+  else {
+    //ROS_INFO("Frame time drift: %f seconds", start_time_local_ + (current_frame_time - start_time_packet_) - ros::Time::now().toSec());
+    previous_frame_time = current_frame_time;
   }
   for (int i = 0; i< body_count; ++i) {
     string subject_name(port_protocol.Get6DOFBodyName(i));

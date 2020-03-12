@@ -145,8 +145,8 @@ void KalmanFilter::reset() {
 void KalmanFilter::prediction(const double& curr_time_stamp) {
   // Propogate the actual state
   double dt = curr_time_stamp - last_time_stamp;
-  //dt = dt > 0 ? dt : msg_interval;
-  //dt = dt*0.9 + msg_interval*0.1;
+  last_time_stamp = curr_time_stamp;
+
   Vector3d dw = angular_vel * dt;
   Vector3d dr = linear_vel * dt;
 
@@ -155,7 +155,6 @@ void KalmanFilter::prediction(const double& curr_time_stamp) {
   AngleAxisd daa(dangle, axis);
   Quaterniond dq(daa);
   // Velocities are modeled as constants
-  last_time_stamp += dt;
   attitude = dq * attitude;
   position = dr + position;
 

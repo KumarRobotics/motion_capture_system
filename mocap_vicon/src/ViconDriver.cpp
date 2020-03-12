@@ -32,7 +32,9 @@ bool ViconDriver::init() {
 
   nh.param("server_address", server_address, string("alkaline2"));
   nh.param("model_list", model_list, vector<string>(0));
-  nh.param("frame_rate", frame_rate, 100);
+  int signed_frame_rate;
+  nh.param("frame_rate", signed_frame_rate, 100);
+  frame_rate = signed_frame_rate > 0 ? signed_frame_rate : 0;
   nh.param("max_accel", max_accel, 10.0);
   nh.param("publish_tf", publish_tf, false);
   nh.param("fixed_frame_id", fixed_frame_id, string("mocap"));
