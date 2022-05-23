@@ -1,7 +1,7 @@
 # ROS Driver for Motion Capture Systems
-![VICON Logo](http://www.awn.com/sites/default/files/styles/inline_medium/public/image/featured/1025139-vicon-delivers-motion-capture-innovations-siggraph-2015.jpg?itok=vsH7Prwo)
-
-![QUALISYS Logo](http://isbs2015.sciencesconf.org/conference/isbs2015/pages/Qualisys_Logga_PMS.png)
+<img src="docs/logos/vicon_logo.jpeg" data-canonical-src="docs/logos/vicon_logo.jpeg" height="100"/>
+&emsp;
+<img src="docs/logos/qualisys_logo.png" data-canonical-src="docs/logos/qualisys_logo.png" height="100"/>
 
 This package contains ROS drivers for two different motion capture systems,**VICON** And **QUALISYS**.
 
