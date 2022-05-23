@@ -50,3 +50,10 @@ target_link_libraries(mocap_vicon_node
   mocap_vicon_driver
   ${catkin_LIBRARIES}
 )
+
+install(DIRECTORY include/ DESTINATION include)
+install(TARGETS mocap_vicon_driver mocap_vicon_node
+   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)

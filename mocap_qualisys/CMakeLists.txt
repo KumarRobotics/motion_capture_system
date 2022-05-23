@@ -17,8 +17,8 @@ find_package(catkin REQUIRED COMPONENTS
 
 
 catkin_package(
-  #INCLUDE_DIRS include
-  #LIBRARIES ${PROJECT_NAME}
+  INCLUDE_DIRS include
+  LIBRARIES mocap_qualisys_driver
   CATKIN_DEPENDS
     geometry_msgs tf mocap_base
   DEPENDS
@@ -64,5 +64,9 @@ else()
   message(ERROR " MacOS is unsupported! mocap_qualisys will not be built!")
 endif()
 
-
-
+install(DIRECTORY include/ DESTINATION include)
+install(TARGETS mocap_qualisys_driver mocap_qualisys_node
+   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
