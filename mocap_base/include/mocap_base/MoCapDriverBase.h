@@ -95,6 +95,9 @@ class Subject {
         const Eigen::Quaterniond& m_attitude,
         const Eigen::Vector3d& m_position);
 
+    void publishMarkerPoints(
+        const double& time,
+        const std::vector<std::array<double,3>> marker_pos);
 
     typedef boost::shared_ptr<Subject> SubjectPtr;
     typedef const boost::shared_ptr<Subject> SubjectConstPtr;
@@ -121,6 +124,7 @@ class Subject {
     std::string parent_frame;
     ros::Publisher pub_filter;
     ros::Publisher pub_raw;
+    ros::Publisher pub_points_raw;
 };
 
 /*
@@ -140,6 +144,7 @@ class MoCapDriverBase{
       frame_rate     (100),
       model_list     (std::vector<std::string>(0)),
       publish_tf     (false),
+      publish_pts     (true),
       fixed_frame_id ("mocap"){
       return;
     }
@@ -206,6 +211,9 @@ class MoCapDriverBase{
 
     // Publish tf
     bool publish_tf;
+
+    // Publish Marker points [Wind estimation Project]
+    bool publish_pts;
     std::string fixed_frame_id;
     tf::TransformBroadcaster tf_publisher;
 

@@ -16,6 +16,8 @@
 
 #include <nav_msgs/Odometry.h>
 #include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/PoseArray.h>
+#include <geometry_msgs/Pose.h>
 #include <eigen_conversions/eigen_msg.h>
 #include <mocap_base/MoCapDriverBase.h>
 
@@ -33,6 +35,7 @@ Subject::Subject(ros::NodeHandle* nptr, const string& sub_name,
 
   pub_filter = nh_ptr->advertise<nav_msgs::Odometry>(name+"/odom", 10);
   pub_raw = nh_ptr->advertise<geometry_msgs::PoseStamped>(name+"/pose", 10);
+  pub_points_raw = nh_ptr->advertise<geometry_msgs::PoseArray>(name+"/position", 10);
   return;
 }
 
@@ -140,4 +143,27 @@ void Subject::processNewMeasurement(
 
   return;
 }
+
+void Subject::publishMarkerPoints(
+    const double& time,
+    const std::vector<std::array<double,3>> marker_pos) {
+  geometry_msgs::PoseArray poses;
+
+  for (auto i: marker_pos) {
+    poses.header.stamp = ros::Time(time);
+    poses.header.frame_id = parent_frame;
+    geometry_msgs::Pose pose;
+    pose.position.x = i[0];
+    pose.position.y = i[1];
+    pose.position.z = i[2];
+    pose.orientation.x = 0;
+    pose.orientation.y = 0;
+    pose.orientation.z = 0;
+    pose.orientation.w = 1;
+    poses.poses.push_back(pose);
+    pub_points_raw.publish(poses);
+
+  }
 }
+
+} // namespace
