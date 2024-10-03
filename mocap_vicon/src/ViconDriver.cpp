@@ -35,6 +35,7 @@ bool ViconDriver::init() {
   nh.param("frame_rate", frame_rate, 100);
   nh.param("max_accel", max_accel, 10.0);
   nh.param("publish_tf", publish_tf, false);
+  nh.param("publish_pts", publish_pts, true);
   nh.param("fixed_frame_id", fixed_frame_id, string("mocap"));
 
   frame_interval = 1.0 / static_cast<double>(frame_rate);
@@ -156,6 +157,41 @@ void ViconDriver::handleSubject(const int& sub_idx) {
   boost::unique_lock<boost::shared_mutex> write_lock(mtx);
   // We assume each subject has only one segment
   string subject_name = client->GetSubjectName(sub_idx).SubjectName;
+  double time = ros::Time::now().toSec();
+
+  // Publish individual points of each marker
+  if (publish_pts) {
+    client->EnableMarkerData();
+    ViconDataStreamSDK::CPP::Output_GetMarkerCount marker_count = 
+      client->GetMarkerCount(subject_name);
+
+
+    // Vector of each point, which contains X,Y,Z data
+    std::vector<std::array<double, 3>> marker_points;
+    marker_points.reserve(marker_count.MarkerCount);
+
+    for (unsigned int i = 0; i < marker_count.MarkerCount; i++) {
+      // Get the Marker Name
+      ViconDataStreamSDK::CPP::Output_GetMarkerName marker_name = 
+        client->GetMarkerName(subject_name, i);
+      
+      // Get the position of that marker in mm
+      if (marker_name.Result != ViconDataStreamSDK::CPP::Result::InvalidSubjectName) {
+        ViconDataStreamSDK::CPP::Output_GetMarkerGlobalTranslation marker_pos = 
+          client->GetMarkerGlobalTranslation(subject_name, marker_name.MarkerName);
+
+        if (marker_pos.Result == ViconDataStreamSDK::CPP::Result::Success) {
+          std::array<double, 3> position = {marker_pos.Translation[0],
+                                            marker_pos.Translation[1],
+                                            marker_pos.Translation[2]};
+          marker_points.emplace_back(position);
+        }
+      }
+    }
+    // Publish to ROS
+    subjects[subject_name]->publishMarkerPoints(time, marker_points);
+  }
+
   string segment_name = client->GetSegmentName(subject_name, 0).SegmentName;
   // Get the pose for the subject
   ViconSDK::Output_GetSegmentGlobalTranslation trans =
@@ -184,7 +220,6 @@ void ViconDriver::handleSubject(const int& sub_idx) {
   }
 
   // Feed the new measurement to the subject
-  double time = ros::Time::now().toSec();
   subjects[subject_name]->processNewMeasurement(time, m_att, m_pos);
   //read_lock.unlock();
 
