@@ -35,7 +35,7 @@ Subject::Subject(ros::NodeHandle* nptr, const string& sub_name,
 
   pub_filter = nh_ptr->advertise<nav_msgs::Odometry>(name+"/odom", 10);
   pub_raw = nh_ptr->advertise<geometry_msgs::PoseStamped>(name+"/pose", 10);
-  pub_points_raw = nh_ptr->advertise<geometry_msgs::PoseArray>(name+"/position", 10);
+  pub_points_raw = nh_ptr->advertise<geometry_msgs::PoseArray>(name+"/individual_marker_array", 10);
   return;
 }
 

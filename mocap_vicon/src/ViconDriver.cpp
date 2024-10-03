@@ -159,9 +159,7 @@ void ViconDriver::handleSubject(const int& sub_idx) {
   string subject_name = client->GetSubjectName(sub_idx).SubjectName;
   double time = ros::Time::now().toSec();
 
-  // ================= Wind Estimation project ================= \\
-  // Reach out to Kashish Garg for any issues with the code
-  // Publishing the raw point data to ROS
+  // Publish individual points of each marker
   if (publish_pts) {
     client->EnableMarkerData();
     ViconDataStreamSDK::CPP::Output_GetMarkerCount marker_count = 
@@ -193,7 +191,6 @@ void ViconDriver::handleSubject(const int& sub_idx) {
     // Publish to ROS
     subjects[subject_name]->publishMarkerPoints(time, marker_points);
   }
-  // ================= Wind Estimation project ================= \\
 
   string segment_name = client->GetSegmentName(subject_name, 0).SegmentName;
   // Get the pose for the subject
