@@ -161,9 +161,9 @@ void Subject::publishMarkerPoints(
     pose.orientation.z = 0;
     pose.orientation.w = 1;
     poses.poses.push_back(pose);
-    pub_points_raw.publish(poses);
 
   }
+  pub_points_raw.publish(poses);
 }
 
 } // namespace
