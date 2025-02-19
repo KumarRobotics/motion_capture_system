@@ -255,7 +255,6 @@ void ViconDriver::handleSubject(const int& sub_idx) {
     att_tf.setX(att.x());
     att_tf.setY(att.y());
     att_tf.setZ(att.z());
-    att_tf.setW(att.w());
 
     pos_tf.setX(pos.x());
     pos_tf.setY(pos.y());
