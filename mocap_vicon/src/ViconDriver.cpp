@@ -255,17 +255,12 @@ void ViconDriver::handleSubject(const int& sub_idx) {
     att_tf.setX(att.x());
     att_tf.setY(att.y());
     att_tf.setZ(att.z());
+    att_tf.setW(att.w());
 
     pos_tf.setX(pos.x());
     pos_tf.setY(pos.y());
     pos_tf.setZ(pos.z());
-    pos_tf.setW(pos.w());
-
-
-    // tf2::StampedTransform stamped_transform =
-    //   tf2::StampedTransform(tf2::Transform(att_tf, pos_tf),
-    //     this->nh->get_clock()->now(), fixed_frame_id, subject_name);
-
+    
     geometry_msgs::msg::TransformStamped stamped_transform;
     stamped_transform.header.stamp = this->nh->get_clock()->now();
     stamped_transform.header.frame_id = fixed_frame_id;
