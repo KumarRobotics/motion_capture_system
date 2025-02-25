@@ -271,12 +271,11 @@ void ViconDriver::handleSubject(const int& sub_idx) {
     stamped_transform.transform.rotation.x = att_tf.x();
     stamped_transform.transform.rotation.y = att_tf.y();
     stamped_transform.transform.rotation.z = att_tf.z();
+    stamped_transform.transform.rotation.w = att_tf.w();
 
-    
-    
     write_lock.lock();
-    static tf2_ros::StaticTransformBroadcaster static_broadcaster(nh);
-    static_broadcaster.sendTransform(stamped_transform);
+    static tf2_ros::TransformBroadcaster tf_broadcaster(nh);
+    tf_broadcaster.sendTransform(stamped_transform);
     //tf_publisher.sendTransform(stamped_transform);
     write_lock.unlock();
   }
