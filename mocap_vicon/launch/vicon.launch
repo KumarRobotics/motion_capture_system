@@ -3,8 +3,8 @@
     type="mocap_vicon_node"
     name="vicon"
     output="screen">
-    <param name="server_address" value=""/>
-    <param name="frame_rate" value="100"/>
+    <param name="server_address" value="192.168.129.11"/>
+    <param name="frame_rate" value="200"/>
     <param name="max_accel" value="10.0"/>
     <param name="publish_tf" value="false"/>
     <param name="fixed_frame_id" value="mocap"/>

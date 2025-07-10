@@ -119,7 +119,7 @@ class Subject {
     // Publisher for the subject
     ros::NodeHandle* nh_ptr;
     std::string parent_frame;
-    ros::Publisher pub_filter;
+    ros::Publisher pub_filter, pub_global;
     ros::Publisher pub_raw;
 };
 
