@@ -18,9 +18,9 @@
 
   <exec_depend>ros2launch</exec_depend>
   <exec_depend>geometry_msgs</exec_depend>
-  <exec_depend>roscpp</exec_depend>
-  <exec_depend>tf</exec_depend>
-  <exec_depend>tf_conversions</exec_depend>
+  <!-- <exec_depend>roscpp</exec_depend> -->
+  <!-- <exec_depend>tf</exec_depend> -->
+  <!-- <exec_depend>tf_conversions</exec_depend> -->
   <exec_depend>mocap_base</exec_depend>
 
   <export>
