@@ -164,7 +164,7 @@ void ViconDriver::handleFrame() {
       it != subjects.end(); ++it) {
     Subject::Status status = it->second->getStatus();
     if (status == Subject::LOST)
-      RCLCPP_WARN_THROTTLE(this->nh->get_logger(), *this->nh->get_clock(), 1, "Lose track of subject %s", (it->first).c_str());
+      RCLCPP_WARN_THROTTLE(this->nh->get_logger(), *this->nh->get_clock(), 1000, "Lose track of subject %s", (it->first).c_str());
     else if (status == Subject::INITIALIZING)
       RCLCPP_WARN(this->nh->get_logger(), "Initialize subject %s", (it->first).c_str());
   }
