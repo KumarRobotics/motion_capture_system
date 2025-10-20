@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8.12)
 
-add_library(ViconDataStreamSDK_CPP
+add_library(ViconDataStreamSDK_CPP STATIC
   Vicon/CrossMarket/DataStream/ViconDataStreamSDK_CPP/DataStreamClient.cpp
   Vicon/CrossMarket/DataStream/ViconDataStreamSDKCore/CoreClient.cpp
   Vicon/CrossMarket/DataStream/ViconDataStreamSDKCore/ClientUtils.cpp
@@ -10,6 +10,12 @@ add_library(ViconDataStreamSDK_CPP
   Vicon/CrossMarket/DataStream/ViconCGStreamClient/ViconCGStreamBayer.cpp
   Vicon/CrossMarket/DataStream/ViconCGStreamClient/CGStreamReaderWriter.cpp
 )
+
+# Enable Position Independent Code for use in shared libraries
+set_target_properties(ViconDataStreamSDK_CPP PROPERTIES
+  POSITION_INDEPENDENT_CODE ON
+)
+
 target_include_directories(ViconDataStreamSDK_CPP
   PUBLIC Vicon/CrossMarket/DataStream
   PRIVATE Vicon/CrossMarket)

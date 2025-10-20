@@ -9,6 +9,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -L/install/mocap_base/lib/mocap_base/")
 
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
 find_package(tf2_eigen REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(mocap_base REQUIRED)
@@ -38,7 +39,7 @@ include_directories(
 
 add_subdirectory(src/vicon_sdk)
 
-add_library(mocap_vicon_driver
+add_library(mocap_vicon_driver SHARED
   src/ViconDriver.cpp
 )
 
@@ -59,6 +60,61 @@ install(TARGETS  mocap_vicon_driver
   DESTINATION lib
 )
 
+# Build the ViconDriverComponent as a shared library (component)
+add_library(mocap_vicon_component SHARED
+  src/vicon_component.cpp
+)
+
+target_include_directories(mocap_vicon_component PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+)
+
+ament_target_dependencies(mocap_vicon_component
+  mocap_base
+  Eigen3
+  rclcpp
+  rclcpp_components
+  tf2_eigen
+  geometry_msgs
+  nav_msgs
+)
+
+target_link_libraries(mocap_vicon_component
+  mocap_vicon_driver
+  ViconDataStreamSDK_CPP
+  ${VICON_BOOST_LIBS}
+  Eigen3::Eigen
+)
+
+# Register the component
+rclcpp_components_register_nodes(mocap_vicon_component "mocap::ViconDriverComponent")
+
+install(TARGETS mocap_vicon_component
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
+)
+
+# Build the standalone executable using the component
+add_executable(mocap_vicon_component_node
+  src/vicon_node_main.cpp
+)
+
+target_link_libraries(mocap_vicon_component_node
+  mocap_vicon_component
+)
+
+ament_target_dependencies(mocap_vicon_component_node
+  rclcpp
+  rclcpp_components
+)
+
+install(TARGETS mocap_vicon_component_node 
+  DESTINATION lib/${PROJECT_NAME}/
+)
+
+# Keep the old executable for backwards compatibility
 add_executable(mocap_vicon_node
   src/vicon.cpp
 )
@@ -73,7 +129,7 @@ target_link_libraries(mocap_vicon_node
  
 ament_target_dependencies(mocap_vicon_node mocap_base Eigen3 rclcpp tf2_eigen  geometry_msgs nav_msgs)
 
-install(TARGETS  mocap_vicon_node 
+install(TARGETS mocap_vicon_node 
   DESTINATION lib/${PROJECT_NAME}/
 )
 install(

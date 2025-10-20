@@ -1,0 +1,27 @@
+from launch import LaunchDescription
+from launch_ros.actions import Node
+
+def generate_launch_description():
+    """Launch mocap_vicon as a standalone node"""
+    return LaunchDescription([
+        Node(
+            package='mocap_vicon',
+            executable='mocap_vicon_node',
+            name='vicon',
+            output='screen',
+            parameters=[
+                {'server_address': 'mocap.perch'},
+                {'frame_rate': 100},
+                {'max_accel': 10.0},
+                {'publish_tf': False},
+                {'publish_pts': False},
+                {'fixed_frame_id': 'mocap'},
+                # Set to [''] to take in ALL models from Vicon
+                {'model_list': ['']},
+            ],
+            remappings=[
+                # Uncomment and modify the remapping if needed
+                # ('vicon/model_name/odom', '/model_name/odom'),
+            ]
+        )
+    ])

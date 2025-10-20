@@ -40,13 +40,21 @@ bool ViconDriver::init() {
   publish_pts = this->nh->declare_parameter<bool>("publish_pts", true);
   fixed_frame_id = this->nh->declare_parameter<string>("fixed_frame_id", string("mocap"));
 
-  this->nh->get_parameter("server_address", server_address);
-  this->nh->get_parameter("model_list", model_list);
-  this->nh->get_parameter("frame_rate", frame_rate);
-  this->nh->get_parameter("max_accel", max_accel);
-  this->nh->get_parameter("publish_tf", publish_tf);
-  this->nh->get_parameter("publish_pts", publish_pts);
-  this->nh->get_parameter("fixed_frame_id", fixed_frame_id);
+  auto get_param_or_warn = [&](const char* name, auto &out) {
+    if (!this->nh->get_parameter(name, out)) {
+      RCLCPP_WARN(this->nh->get_logger(), "Failed to read parameter '%s'", name);
+      return false;
+    }
+    return true;
+  };
+
+  get_param_or_warn("server_address", server_address);
+  get_param_or_warn("model_list", model_list);
+  get_param_or_warn("frame_rate", frame_rate);
+  get_param_or_warn("max_accel", max_accel);
+  get_param_or_warn("publish_tf", publish_tf);
+  get_param_or_warn("publish_pts", publish_pts);
+  get_param_or_warn("fixed_frame_id", fixed_frame_id);
 
   frame_interval = 1.0 / static_cast<double>(frame_rate);
   double& dt = frame_interval;
