@@ -13,14 +13,12 @@ For the QUALISYS driver, we use the interface from [Qualisys2Ros](https://github
 For the rest of the software, the license is Apache 2.0 wherever not specified.
 
 ## Compiling
-This is a catkin package. Make sure the package is on `ROS_PACKAGE_PATH` after cloning the package to your workspace. Drivers for different motion capture system can be independently compiled.
-
+To compile, simply use `rosdep` and `colcon build` as follows:
+```bash
+rosdep install --from-paths src -y -i
+colcon build --packages-select mocap_base mocap_vicon  
 ```
-cd your_work_space
-catkin_make --pkg mocap_{sys} --cmake-args -DCMAKE_BUILD_TYPE=Release
-```
 
-This will compile the drivers for `{sys}`
 
 ## Example Usage
 
